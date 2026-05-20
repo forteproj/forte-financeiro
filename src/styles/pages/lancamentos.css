@@ -1,0 +1,204 @@
+/* ════════════════════════════════════════════
+   LANÇAMENTOS — Despesa e Receita
+════════════════════════════════════════════ */
+
+/* ── CC Info (despesa) ── */
+.cc-info {
+  background: var(--sf2); border: 1px solid var(--bd);
+  border-radius: var(--raio); padding: 10px 14px;
+  margin-top: 8px; display: none; gap: 16px; flex-wrap: wrap;
+}
+.cc-info.visivel { display: flex; }
+.cc-info-item   { font-size: 11px; }
+.cc-info-label  {
+  font-size: 9px; font-weight: 800; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--mu); margin-bottom: 2px;
+}
+.cc-info-valor  { font-weight: 700; color: var(--tx); }
+.cc-tag {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  color: var(--azul); background: var(--azul-bg);
+  border-radius: 2px; padding: 2px 7px;
+}
+
+/* ── Regra de desempate ── */
+.regra-box {
+  background: var(--abg); border: 1px solid var(--abdr);
+  border-left: 3px solid var(--ambm); border-radius: var(--raio);
+  padding: 10px 14px; margin-bottom: 14px; display: none;
+}
+.regra-box.visivel { display: block; }
+.regra-box-titulo {
+  font-size: 9px; font-weight: 800; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--amb); margin-bottom: 6px;
+}
+.regra-box p { font-size: 11px; color: var(--txs); line-height: 1.6; }
+.regra-box code {
+  background: rgba(168,118,0,.15); padding: 1px 5px;
+  border-radius: 2px; font-family: monospace; font-size: 10px; color: var(--amb);
+}
+
+/* ── Contrato Info (receita) ── */
+.contrato-info {
+  background: var(--sf2); border: 1px solid var(--bd);
+  border-radius: var(--raio); padding: 12px 16px;
+  margin-top: 10px; display: none;
+}
+.contrato-info.visivel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.ci-item .ci-label {
+  font-size: 9px; font-weight: 800; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--mu); margin-bottom: 3px;
+}
+.ci-item .ci-valor { font-size: 12px; font-weight: 700; color: var(--tx); }
+.ci-item .ci-valor.verde { color: var(--verde); }
+.ci-item .ci-valor.amb   { color: var(--amb); }
+
+/* ── Retenções (receita) ── */
+.retencoes-box {
+  background: var(--sf2); border: 1px solid var(--bd);
+  border-radius: var(--raio); padding: 16px 18px;
+  margin-top: 4px; display: none;
+}
+.retencoes-box.visivel { display: block; }
+.ret-titulo {
+  font-size: 9px; font-weight: 800; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--mu); margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.ret-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px; margin-bottom: 12px;
+}
+.ret-item-ret {
+  background: var(--sf); border: 1px solid var(--bd);
+  border-radius: var(--raio); padding: 10px 12px;
+}
+.ret-item-label-r {
+  font-size: 9px; font-weight: 800; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--mu); margin-bottom: 4px;
+}
+.ret-item-row { display: flex; align-items: center; gap: 8px; }
+.ret-aliq-r {
+  width: 60px; padding: 5px 8px;
+  background: var(--sf2); border: 1px solid var(--bd); border-radius: var(--raio);
+  font-family: var(--fonte); font-size: 12px; font-weight: 700; color: var(--tx);
+  outline: none; text-align: right; transition: border-color .15s;
+}
+.ret-aliq-r:focus { border-color: var(--ambm); }
+.ret-aliq-sym { font-size: 11px; color: var(--mu); font-weight: 700; }
+.ret-valor    { font-size: 12px; font-weight: 800; color: var(--vermelho); margin-left: auto; }
+.ret-toggle   { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--txs); cursor: pointer; user-select: none; }
+.ret-toggle input { width: 13px; height: 13px; cursor: pointer; }
+.ret-total {
+  background: var(--abg); border: 1px solid var(--abdr);
+  border-radius: var(--raio); padding: 10px 14px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.ret-total-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--amb);
+}
+.ret-total-valor { font-size: 14px; font-weight: 800; color: var(--vermelho); }
+.ret-liquido     { font-size: 12px; font-weight: 700; color: var(--verde); }
+
+/* ── Histórico ── */
+.historico { margin-top: 24px; }
+.historico-titulo {
+  font-size: 9px; font-weight: 800; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--mu); margin-bottom: 10px;
+}
+.historico-lista { display: flex; flex-direction: column; gap: 6px; }
+.historico-item {
+  background: var(--sf); border: 1px solid var(--bd);
+  border-radius: var(--raio); padding: 10px 14px;
+  display: flex; align-items: center; gap: 12px; transition: background .15s;
+}
+.historico-item:hover { background: var(--fv); }
+.hist-data  { font-size: 10px; color: var(--mu); white-space: nowrap; min-width: 60px; }
+.hist-cat   { font-size: 11px; font-weight: 700; color: var(--tx); flex: 1; }
+.hist-cc    {
+  font-size: 10px; font-weight: 700; color: var(--azul);
+  background: var(--azul-bg); border-radius: 2px; padding: 1px 6px; white-space: nowrap;
+}
+.hist-valor-d { font-size: 12px; font-weight: 800; color: var(--vermelho); white-space: nowrap; }
+.hist-valor-r { font-size: 12px; font-weight: 800; color: var(--verde);    white-space: nowrap; }
+.hist-vazio   { font-size: 11px; color: var(--mu); font-style: italic; padding: 12px 0; text-align: center; }
+
+@media (max-width: 640px) {
+  .ret-grid       { grid-template-columns: 1fr 1fr; }
+  .contrato-info  { grid-template-columns: 1fr 1fr; }
+}
+
+/* ════════════════════════════════════════════
+   BASE DE DADOS
+════════════════════════════════════════════ */
+
+/* ── Barra de filtros ── */
+.bd-filtros {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 14px;
+  align-items: center;
+}
+
+/* ── Badge de tipo ── */
+.bd-tipo-tag {
+  display: inline-block;
+  font-size: 9px; font-weight: 800;
+  letter-spacing: .8px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 3px;
+  white-space: nowrap;
+}
+.bd-receita { color: var(--verde);    background: var(--verde-bg); }
+.bd-gasto   { color: var(--vermelho); background: var(--verm-bg);  }
+
+/* ── Células da tabela ── */
+.bd-data { white-space: nowrap; font-size: 11px; color: var(--mu); }
+
+.bd-categoria { max-width: 260px; }
+.bd-cat-cod {
+  display: block;
+  font-size: 9px; font-weight: 800; letter-spacing: .5px;
+  color: var(--amb); font-family: monospace;
+}
+.bd-cat-desc {
+  display: block;
+  font-size: 11px; color: var(--tx);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.bd-forma    { font-size: 11px; color: var(--txs); white-space: nowrap; }
+
+.bd-valor    { font-size: 12px; font-weight: 800; }
+.bd-valor-r  { color: var(--verde);    }
+.bd-valor-d  { color: var(--vermelho); }
+
+.bd-info {
+  font-size: 10px; color: var(--txs);
+  max-width: 180px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.bd-doc      { font-size: 10px; color: var(--mu); font-family: monospace; white-space: nowrap; }
+.bd-contrato { font-size: 10px; color: var(--txs); white-space: nowrap; }
+
+/* ── Rodapé de totais ── */
+.bd-tfoot-row td {
+  border-top: 2px solid var(--bd);
+  background: var(--sf2);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* ── Loading ── */
+.bd-loading {
+  text-align: center;
+  padding: 40px 0;
+}
+
+@media (max-width: 768px) {
+  .bd-filtros > * { flex: 1 1 140px; }
+}

@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function perfil() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAtivo() {
+      return isAuth() && perfil().status == 'ativo';
+    }
+
+    function isFinanceiro() {
+      return isAtivo() && perfil().nivel in ['administrador', 'financeiro'];
+    }
+
+    function isAdmin() {
+      return isAtivo() && perfil().nivel == 'administrador';
+    }
+
+    // ── Usuários ─────────────────────────────
+    match /users/{uid} {
+      // Qualquer usuário pode ler o próprio perfil
+      allow read: if isAuth() && (request.auth.uid == uid || isAdmin());
+      // Admin pode criar/alterar qualquer perfil
+      allow write: if isAdmin();
+      // Usuário pode atualizar só o campo ultimoAcesso
+      allow update: if isAuth() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data)
+             .affectedKeys().hasOnly(['ultimoAcesso']);
+    }
+
+    // ── Plano de Contas ───────────────────────
+    match /planoContas/{id} {
+      allow read:   if isAtivo();
+      allow write:  if isFinanceiro();
+    }
+
+    // ── Contratos ────────────────────────────
+    match /contratos/{id} {
+      allow read:   if isFinanceiro();
+      allow write:  if isFinanceiro();
+    }
+
+    // ── Lançamentos ──────────────────────────
+    match /lancamentos/{id} {
+      allow read:   if isFinanceiro();
+      allow create: if isAtivo();
+      allow update, delete: if isFinanceiro();
+    }
+  }
+}

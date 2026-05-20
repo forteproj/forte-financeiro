@@ -1,0 +1,42 @@
+:root {
+  /* Paleta ECCOFORTE */
+  --bg:    #E6E4DE;
+  --sf:    #F2F0EB;
+  --sf2:   #E2DFD8;
+  --sf3:   #D8D5CE;
+  --bd:    #C8C5BE;
+  --bd2:   #AEA9A0;
+  --amb:   #A87600;
+  --ambm:  #C99200;
+  --abg:   #FFF5CC;
+  --abdr:  #E0C040;
+  --tx:    #1A1916;
+  --txs:   #5A5852;
+  --mu:    #908D86;
+  --fv:    #ECEAE4;
+
+  /* Escala dark (topbar) */
+  --dark:  #1E1C18;
+  --dark2: #252320;
+  --dark3: #2C2A26;
+  --dark4: #383530;
+  --dark5: #4A4845;
+
+  /* Semânticas */
+  --verde:    #2E7D4F;
+  --verde-bg: rgba(46,125,79,0.12);
+  --verde-bd: rgba(46,125,79,0.3);
+  --vermelho: #C0392B;
+  --verm-bg:  rgba(192,57,43,0.12);
+  --verm-bd:  rgba(192,57,43,0.3);
+  --amarelo:  #B8860B;
+  --amar-bg:  rgba(184,134,11,0.12);
+  --amar-bd:  rgba(184,134,11,0.3);
+  --azul:     #2563A8;
+  --azul-bg:  rgba(37,99,168,0.12);
+  --azul-bd:  rgba(37,99,168,0.3);
+
+  --fonte:   'Montserrat', sans-serif;
+  --raio:    4px;
+  --raio-lg: 6px;
+}

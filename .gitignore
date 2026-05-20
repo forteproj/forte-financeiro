@@ -1,0 +1,26 @@
+# Dependências
+node_modules/
+functions/node_modules/
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebaserc
+
+# Credenciais — nunca versionar
+src/js/firebase-env.js
+.env
+.env.*
+
+# Arquivos temporários / SO
+*.local
+*.tmp
+~$*
+.DS_Store
+Thumbs.db
+
+# Arquivos de trabalho (Excel/PDF referência — opcionais no repo)
+*.xlsx
+*.pdf
