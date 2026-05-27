@@ -34,8 +34,8 @@
 }
 .regra-box p { font-size: 11px; color: var(--txs); line-height: 1.6; }
 .regra-box code {
-  background: rgba(168,118,0,.15); padding: 1px 5px;
-  border-radius: 2px; font-family: monospace; font-size: 10px; color: var(--amb);
+  background: rgba(245,166,35,.15); padding: 1px 5px;
+  border-radius: 2px; font-family: var(--fonte-mono); font-size: 10px; color: var(--amb);
 }
 
 /* ── Contrato Info (receita) ── */
@@ -162,7 +162,7 @@
 .bd-cat-cod {
   display: block;
   font-size: 9px; font-weight: 800; letter-spacing: .5px;
-  color: var(--amb); font-family: monospace;
+  color: var(--amb); font-family: var(--fonte-mono);
 }
 .bd-cat-desc {
   display: block;
@@ -182,7 +182,7 @@
   max-width: 180px; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
-.bd-doc      { font-size: 10px; color: var(--mu); font-family: monospace; white-space: nowrap; }
+.bd-doc      { font-size: 10px; color: var(--mu); font-family: var(--fonte-mono); white-space: nowrap; }
 .bd-contrato { font-size: 10px; color: var(--txs); white-space: nowrap; }
 
 /* ── Rodapé de totais ── */

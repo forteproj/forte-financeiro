@@ -14,20 +14,20 @@
 .grade {
   position: absolute; inset: 0;
   background-image:
-    linear-gradient(rgba(201,146,0,.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201,146,0,.06) 1px, transparent 1px);
+    linear-gradient(rgba(245,166,35,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,166,35,.06) 1px, transparent 1px);
   background-size: 48px 48px; pointer-events: none;
 }
 .brilho {
   position: absolute; top: -140px; right: -100px;
   width: 500px; height: 500px;
-  background: radial-gradient(circle, rgba(201,146,0,.14) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(245,166,35,.14) 0%, transparent 65%);
   pointer-events: none;
 }
 .brilho2 {
   position: absolute; bottom: -80px; left: -60px;
   width: 340px; height: 340px;
-  background: radial-gradient(circle, rgba(201,146,0,.06) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(245,166,35,.06) 0%, transparent 65%);
   pointer-events: none;
 }
 .linha-amb {
@@ -76,7 +76,7 @@
   font-size: 9px; font-weight: 700; padding: 2px 7px;
   border-radius: 2px; letter-spacing: .5px; text-transform: uppercase;
 }
-.badge-sim { background: rgba(201,146,0,.18); color: var(--ambm); }
+.badge-sim { background: rgba(245,166,35,.18); color: var(--ambm); }
 .badge-nao { background: var(--dark3); color: var(--dark5); text-decoration: line-through; }
 .rodape-esq {
   position: relative; z-index: 1; margin-top: auto;

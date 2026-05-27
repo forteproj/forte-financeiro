@@ -1,42 +1,43 @@
 :root {
-  /* Paleta ECCOFORTE */
-  --bg:    #E6E4DE;
-  --sf:    #F2F0EB;
-  --sf2:   #E2DFD8;
-  --sf3:   #D8D5CE;
-  --bd:    #C8C5BE;
-  --bd2:   #AEA9A0;
-  --amb:   #A87600;
-  --ambm:  #C99200;
-  --abg:   #FFF5CC;
-  --abdr:  #E0C040;
-  --tx:    #1A1916;
-  --txs:   #5A5852;
-  --mu:    #908D86;
-  --fv:    #ECEAE4;
+  /* Paleta FORTE — mapeada para o design system */
+  --bg:    var(--ds-bg2);
+  --sf:    var(--ds-bg);
+  --sf2:   var(--ds-bg3);
+  --sf3:   var(--ds-bg4);
+  --bd:    var(--ds-bd2);
+  --bd2:   var(--ds-bd3);
+  --amb:   var(--ds-or);
+  --ambm:  var(--ds-ord);
+  --abg:   var(--ds-or-light);
+  --abdr:  var(--ds-ord);
+  --tx:    var(--ds-tx);
+  --txs:   var(--ds-tx2);
+  --mu:    var(--ds-tx3);
+  --fv:    var(--ds-bg2);
 
   /* Escala dark (topbar) */
-  --dark:  #1E1C18;
-  --dark2: #252320;
-  --dark3: #2C2A26;
-  --dark4: #383530;
-  --dark5: #4A4845;
+  --dark:  var(--ds-dark);
+  --dark2: var(--ds-dark2);
+  --dark3: var(--ds-dark3);
+  --dark4: var(--ds-dark4);
+  --dark5: var(--ds-dark5);
 
   /* Semânticas */
-  --verde:    #2E7D4F;
-  --verde-bg: rgba(46,125,79,0.12);
-  --verde-bd: rgba(46,125,79,0.3);
-  --vermelho: #C0392B;
-  --verm-bg:  rgba(192,57,43,0.12);
-  --verm-bd:  rgba(192,57,43,0.3);
-  --amarelo:  #B8860B;
-  --amar-bg:  rgba(184,134,11,0.12);
-  --amar-bd:  rgba(184,134,11,0.3);
-  --azul:     #2563A8;
-  --azul-bg:  rgba(37,99,168,0.12);
-  --azul-bd:  rgba(37,99,168,0.3);
+  --verde:    var(--ds-grn);
+  --verde-bg: var(--ds-grn-bg);
+  --verde-bd: var(--ds-grn-bd);
+  --vermelho: var(--ds-red);
+  --verm-bg:  var(--ds-red-bg);
+  --verm-bd:  var(--ds-red-bd);
+  --amarelo:  var(--ds-ylw);
+  --amar-bg:  var(--ds-ylw-bg);
+  --amar-bd:  var(--ds-ylw-bd);
+  --azul:     var(--ds-blu);
+  --azul-bg:  var(--ds-blu-bg);
+  --azul-bd:  var(--ds-blu-bd);
 
-  --fonte:   'Montserrat', sans-serif;
+  --fonte:      var(--ds-font);
+  --fonte-mono: var(--ds-mono);
   --raio:    4px;
   --raio-lg: 6px;
 }

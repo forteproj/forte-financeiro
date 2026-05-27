@@ -70,7 +70,7 @@
 
 /* ── Células ── */
 .td-cliente { font-size: 12px; font-weight: 700; color: var(--tx); }
-.td-num     { font-family: monospace; font-size: 11px; font-weight: 700; color: var(--amb); }
+.td-num     { font-family: var(--fonte-mono); font-size: 11px; font-weight: 700; color: var(--amb); }
 .td-cc-cont {
   font-size: 10px; font-weight: 700; color: var(--azul);
   background: var(--azul-bg); border-radius: 2px;
@@ -198,8 +198,8 @@ tbody tr.linha-critico:hover { background: rgba(192,57,43,.11); }
 }
 .ret-nota strong { color: var(--amb); font-weight: 700; }
 .ret-nota code {
-  background: rgba(168,118,0,.12); padding: 1px 5px; border-radius: 2px;
-  font-family: monospace; font-size: 10px; color: var(--amb);
+  background: rgba(245,166,35,.12); padding: 1px 5px; border-radius: 2px;
+  font-family: var(--fonte-mono); font-size: 10px; color: var(--amb);
 }
 
 /* ── Contato fiscal ── */
@@ -214,7 +214,7 @@ tbody tr.linha-critico:hover { background: rgba(192,57,43,.11); }
   font-size: 9px; font-weight: 800; letter-spacing: 2px;
   text-transform: uppercase; color: var(--mu); margin-bottom: 4px;
 }
-.cod-preview-valor { font-family: monospace; font-size: 13px; font-weight: 700; color: var(--amb); }
+.cod-preview-valor { font-family: var(--fonte-mono); font-size: 13px; font-weight: 700; color: var(--amb); }
 
 /* ── Botões do contrato ── */
 .btn-novo {

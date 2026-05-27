@@ -45,7 +45,7 @@
 }
 
 /* ── Tabela plano ── */
-.td-cod { font-family: monospace; font-size: 11px; font-weight: 700; color: var(--amb); white-space: nowrap; }
+.td-cod { font-family: var(--fonte-mono); font-size: 11px; font-weight: 700; color: var(--amb); white-space: nowrap; }
 .td-desc { font-size: 12px; font-weight: 600; color: var(--tx); }
 .td-cc {
   font-size: 10px; font-weight: 700; color: var(--azul);
@@ -100,7 +100,7 @@ tbody tr.inativa { opacity: .45; }
 .regra-texto  { font-size: 11px; color: var(--txs); line-height: 1.6; }
 .regra-texto code {
   background: var(--abg); border: 1px solid var(--abdr); border-radius: 2px;
-  padding: 1px 5px; font-family: monospace; font-size: 10px; color: var(--amb);
+  padding: 1px 5px; font-family: var(--fonte-mono); font-size: 10px; color: var(--amb);
 }
 .regra-texto strong { color: var(--tx); font-weight: 700; }
 
