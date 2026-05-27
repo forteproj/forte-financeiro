@@ -26,7 +26,7 @@ function _html() {
 
     <div class="logo-area">
       <p class="logo-tag">Sistema Financeiro Interno</p>
-      <h1 class="logo-nome">Finanças</h1>
+      <h1 class="logo-nome">FINAN<em>ÇAS</em></h1>
       <p class="logo-sub">Gestão · Contratos · KPIs · Fluxo de Caixa</p>
     </div>
 
