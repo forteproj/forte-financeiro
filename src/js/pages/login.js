@@ -83,8 +83,7 @@ function _html() {
   <!-- Lado direito -->
   <section class="lado-dir">
     <div class="form-box">
-      <h2 class="form-titulo">Entrar no sistema</h2>
-      <p class="form-sub">Acesso restrito — use as credenciais cadastradas pelo administrador</p>
+      <h2 class="form-titulo">Login</h2>
 
       <div class="abas">
         <button class="aba-btn ativo" id="aba-login"   data-aba="login">Já tenho acesso</button>
