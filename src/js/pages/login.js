@@ -130,15 +130,6 @@ function _html() {
         </div>
       </div>
 
-      <div class="div-sheets">
-        <div class="sheets-link">
-          <span style="font-size:18px">📊</span>
-          <div>
-            <strong>Google Sheets — Espelho automático</strong>
-            Novos lançamentos sincronizados via Cloud Functions
-          </div>
-        </div>
-      </div>
     </div>
   </section>
 </div>

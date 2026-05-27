@@ -40,7 +40,7 @@
   color: var(--ambm); text-transform: uppercase; margin-bottom: 12px;
 }
 .logo-nome {
-  font-size: 54px; font-weight: 800;
+  font-size: 52px; font-weight: 800;
   line-height: .92; color: var(--sf);
   text-transform: uppercase; letter-spacing: -1px;
 }
