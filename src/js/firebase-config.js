@@ -1,9 +1,14 @@
 // ══════════════════════════════════════════════════════
 //  FIREBASE CONFIG
-//  Credenciais carregadas de firebase-env.js (arquivo gitignorável)
-//  Para configurar: copie firebase-env.example.js → firebase-env.js
 // ══════════════════════════════════════════════════════
-import { firebaseConfig } from './firebase-env.js';
+const firebaseConfig = {
+  apiKey:            "AIzaSyDsB92rumYOJV0vLo3jUaQsg91h2uT3fgg",
+  authDomain:        "forte-financeiro.firebaseapp.com",
+  projectId:         "forte-financeiro",
+  storageBucket:     "forte-financeiro.firebasestorage.app",
+  messagingSenderId: "76950285425",
+  appId:             "1:76950285425:web:25f88f6bcb76f5e4c9bfd0",
+};
 import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
   getAuth, signInWithEmailAndPassword, signOut as fbSignOut,
