@@ -40,7 +40,11 @@ export const router = {
   },
 
   navegar(rota) {
-    window.location.hash = '#' + rota;
+    if (window.location.hash === '#' + rota) {
+      this._processar();
+    } else {
+      window.location.hash = '#' + rota;
+    }
   },
 
   rotaAtual() { return rotaAtual; },
