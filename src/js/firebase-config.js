@@ -13,22 +13,27 @@ import {
   getFirestore,
   collection, doc, getDoc, getDocs, addDoc, setDoc,
   updateDoc, deleteDoc, query, where, orderBy,
-  limit, serverTimestamp, writeBatch,
+  limit, serverTimestamp, writeBatch, increment,
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
   getFunctions, httpsCallable,
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js';
+import {
+  getStorage, ref as storageRef, uploadBytes, getDownloadURL,
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
-export const db   = getFirestore(app);
-export const fns  = getFunctions(app, 'southamerica-east1');
+export const auth    = getAuth(app);
+export const db      = getFirestore(app);
+export const fns     = getFunctions(app, 'southamerica-east1');
+export const storage = getStorage(app);
 
 // Exporta helpers do Firestore para uso nos módulos
 export {
   signInWithEmailAndPassword, fbSignOut, sendPasswordResetEmail, onAuthStateChanged,
   collection, doc, getDoc, getDocs, addDoc, setDoc,
   updateDoc, deleteDoc, query, where, orderBy,
-  limit, serverTimestamp, writeBatch, httpsCallable,
+  limit, serverTimestamp, writeBatch, increment, httpsCallable,
+  storageRef, uploadBytes, getDownloadURL,
 };

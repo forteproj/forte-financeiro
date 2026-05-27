@@ -52,5 +52,11 @@ service cloud.firestore {
       allow create: if isAtivo();
       allow update, delete: if isFinanceiro();
     }
+
+    // ── Fornecedores ─────────────────────────
+    match /fornecedores/{id} {
+      allow read:  if isAtivo();
+      allow write: if isAtivo();
+    }
   }
 }

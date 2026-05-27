@@ -15,9 +15,9 @@ const GRUPOS = {
 
 const CC_CLASSES = {
   'CC-CLI-xxx': '',
-  'CC-ADM-01':  'adm',
-  'CC-ADM-02':  'adm2',
-  'CC-ADM-03':  'adm3',
+  'CC-ADM-01-MATRIZ':             'adm',
+  'CC-ADM-02-FOLHA DE PAGAMENTO': 'adm2',
+  'CC-ADM-03-INVESTIMENTOS':      'adm3',
 };
 
 let _plano  = [];
@@ -115,9 +115,9 @@ function _html(perfil) {
           <label>Centro de Custo padrão</label>
           <select id="f-cc">
             <option value="CC-CLI-xxx">CC-CLI-xxx (obra/cliente)</option>
-            <option value="CC-ADM-01">CC-ADM-01 (administrativo)</option>
-            <option value="CC-ADM-02">CC-ADM-02 (folha operacional)</option>
-            <option value="CC-ADM-03">CC-ADM-03 (CAPEX)</option>
+            <option value="CC-ADM-01-MATRIZ">CC-ADM-01-MATRIZ</option>
+            <option value="CC-ADM-02-FOLHA DE PAGAMENTO">CC-ADM-02-FOLHA DE PAGAMENTO</option>
+            <option value="CC-ADM-03-INVESTIMENTOS">CC-ADM-03-INVESTIMENTOS</option>
           </select>
         </div>
         <div class="campo">
@@ -149,17 +149,17 @@ function _html(perfil) {
 function _regrasHTML() {
   const regras = [
     { cor:'',      tag:'⚠ Regra CAPEX',       titulo:'Limite de capitalização',
-      texto:`Compras <strong>abaixo de R$ 2.500</strong> → lançar como despesa direta (<code>3.x</code> ou <code>4.x</code>).<br><br>Compras <strong>acima de R$ 2.500</strong> → lançar como ativo imobilizado: categoria <code>6.1.001</code> no centro <code>CC-ADM-03</code>.` },
+      texto:`Compras <strong>abaixo de R$ 2.500</strong> → lançar como despesa direta (<code>3.x</code> ou <code>4.x</code>).<br><br>Compras <strong>acima de R$ 2.500</strong> → lançar como ativo imobilizado: categoria <code>6.1.001</code> no centro <code>CC-ADM-03-INVESTIMENTOS</code>.` },
     { cor:'verde', tag:'⚠ Regra de Desempate', titulo:'Escritório vs Obra',
-      texto:`Pergunta-chave: <strong>"esse gasto existe por causa de uma obra específica?"</strong><br><br><strong>Sim</strong> → <code>CC-CLI-xxx</code> da obra.<br><strong>Não</strong> → <code>CC-ADM-01</code> (escritório central).` },
+      texto:`Pergunta-chave: <strong>"esse gasto existe por causa de uma obra específica?"</strong><br><br><strong>Sim</strong> → <code>CC-CLI-xxx</code> da obra.<br><strong>Não</strong> → <code>CC-ADM-01-MATRIZ</code> (escritório central).` },
     { cor:'azul',  tag:'⚠ Rateio de Folha',   titulo:'Critério fixo mensal',
-      texto:`Folha acumula em <code>CC-ADM-02</code> durante o mês.<br><br>No fechamento: ratear por <strong>dias-equipe alocados</strong> por cliente.<br>Fórmula: <code>Total ADM-02 × (dias cliente ÷ total dias)</code>.<br>Lançar como <code>3.2.001</code> em cada <code>CC-CLI</code>.` },
+      texto:`Folha acumula em <code>CC-ADM-02-FOLHA DE PAGAMENTO</code> durante o mês.<br><br>No fechamento: ratear por <strong>dias-equipe alocados</strong> por cliente.<br>Fórmula: <code>Total ADM-02 × (dias cliente ÷ total dias)</code>.<br>Lançar como <code>3.2.001</code> em cada <code>CC-CLI</code>.` },
     { cor:'roxo',  tag:'⚠ Seguro Garantia',   titulo:'Apólice, não caução',
       texto:`A Forte usa <strong>seguro garantia (apólice)</strong> — não retenção em dinheiro.<br><br>Prêmio da apólice → categoria <code>3.8.002</code> no <code>CC-CLI</code> do contrato vinculado.` },
     { cor:'verde', tag:'⚠ Todo Lançamento',   titulo:'Campos obrigatórios',
       texto:`Todo lançamento precisa ter:<br><strong>1.</strong> Categoria (código do plano de contas)<br><strong>2.</strong> Centro de Custo correto<br><strong>3.</strong> Documento anexo (NF, boleto, RPA…)<br><br><strong>Sem CC correto → não paga.</strong>` },
     { cor:'',      tag:'⚠ CC-ADM-02',        titulo:'Folha operacional',
-      texto:`Salários, encargos, VA/VT e horas extras das equipes de campo acumulam em <code>CC-ADM-02</code>.<br><br>Ao final do mês este CC deve <strong>fechar zerado</strong> após o rateio para os clientes.` },
+      texto:`Salários, encargos, VA/VT e horas extras das equipes de campo acumulam em <code>CC-ADM-02-FOLHA DE PAGAMENTO</code>.<br><br>Ao final do mês este CC deve <strong>fechar zerado</strong> após o rateio para os clientes.` },
   ];
   return regras.map(r => `
     <div class="regra-card ${r.cor}">

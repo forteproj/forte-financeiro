@@ -14,6 +14,11 @@ src/js/firebase-env.js
 .env
 .env.*
 
+# Scripts de seed temporários
+seed-*.html
+functions/criar-admin.js
+serviceAccount*.json
+
 # Arquivos temporários / SO
 *.local
 *.tmp

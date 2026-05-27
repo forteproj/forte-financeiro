@@ -1,17 +1,28 @@
 import {
-  carregarContratos,
+  carregarContratos, atualizarContrato,
   salvarLancamento, carregarLancamentosRecentes, contarLancamentos,
+  buscarLancamento, buscarRetencoesDaReceita, deletarLancamento, atualizarLancamento,
+  increment,
 } from '../db.js';
 import {
   formatarValorInput, parseMoeda, fmtMfull, fmtData, mesNome,
   mostrarMsg, esconderMsg, msgHTML,
 } from '../utils.js';
+import { anexoHTML, bindAnexo, uploadAnexo, showExistingAnexo } from '../upload-helper.js';
 
-let _perfil    = null;
-let _contratos = [];
+let _perfil              = null;
+let _contratos           = [];
+let _contratoSelecionado = null;
+let _editId              = null;
+let _retencoesAntigas    = [];
+let _anexo               = null;
 
 export async function mount(container, perfil) {
   _perfil = perfil;
+  _editId = null;
+  _retencoesAntigas = [];
+  const hashParts = window.location.hash.slice(1).split('/');
+  if (hashParts[1]) _editId = hashParts[1];
 
   if (perfil?.nivel === 'operacao') {
     container.innerHTML = `
@@ -38,11 +49,26 @@ export async function mount(container, perfil) {
   }
 
   _bindEventos();
+  _anexo = bindAnexo('rec', (dados) => {
+    if (dados.nNF && !document.getElementById('f-doc').value)
+      document.getElementById('f-doc').value = dados.nNF;
+    if (dados.vNF) {
+      const el = document.getElementById('f-valor');
+      el.value = dados.vNF.toFixed(2).replace('.', ',');
+      formatarValorInput(el);
+      _calcularRetencoes();
+    }
+  });
   _renderHistorico();
   _atualizarContador();
+  if (_editId) await _carregarParaEdicao();
 }
 
-export function destroy() {}
+export function destroy() {
+  _editId = null;
+  _retencoesAntigas = [];
+  _anexo = null;
+}
 
 // ── HTML ──────────────────────────────────────────
 function _html() {
@@ -51,6 +77,11 @@ function _html() {
   <div class="page-header">
     <div class="page-title verde">Lançar Receita</div>
     <div class="page-sub">Entradas · NFS-e · Medições · Adiantamentos · Receitas financeiras</div>
+  </div>
+
+  <div id="edit-banner" style="display:none;background:rgba(201,146,0,.12);border:1px solid var(--amb);color:var(--tx);padding:10px 18px;border-radius:var(--raio);margin-bottom:14px;align-items:center;justify-content:space-between">
+    <span style="font-size:12px;font-weight:800">✏ Editando lançamento existente</span>
+    <button onclick="window.app.navigate('base-dados')" style="background:var(--amb);color:#1E1C18;border:none;border-radius:4px;padding:4px 14px;font-size:11px;font-weight:800;cursor:pointer">← Base de Dados</button>
   </div>
 
   ${msgHTML('msg-feedback')}
@@ -62,7 +93,7 @@ function _html() {
       <div class="section-titulo">Identificação</div>
       <div class="row row-4">
         <div class="campo">
-          <label>Data recebimento <span style="color:var(--vermelho)">*</span></label>
+          <label>Data prevista do recebimento <span style="color:var(--vermelho)">*</span></label>
           <input type="date" id="f-data">
         </div>
         <div class="campo">
@@ -170,38 +201,49 @@ function _html() {
       <div class="retencoes-box" id="retencoes-box">
         <div class="ret-titulo">
           Alíquotas — preenchidas automaticamente pelo contrato quando configuradas
+          <span id="ret-mo-info" style="font-size:10px;font-weight:600;color:var(--amb);display:none">
+            · MO-ISS: <span id="ret-mo-iss-pct">100</span>% · MO-INSS: <span id="ret-mo-inss-pct">100</span>%
+          </span>
         </div>
         <div class="ret-grid">
-          <div class="ret-item">
-            <div class="ret-item-label">ISS Retido (2.1.001)</div>
+          <div class="ret-item-ret">
+            <div class="ret-item-label-r">ISS Retido (2.1.001) <span style="font-size:9px;color:var(--mu)">sobre MO</span></div>
             <div class="ret-item-row">
-              <input class="ret-aliq" type="number" id="aliq-iss" value="0" min="0" max="100" step="0.01">
+              <input class="ret-aliq-r" type="number" id="aliq-iss" value="0" min="0" max="100" step="0.01">
               <span class="ret-aliq-sym">%</span>
               <span class="ret-valor" id="val-iss">R$ 0,00</span>
             </div>
           </div>
-          <div class="ret-item">
-            <div class="ret-item-label">INSS Retido (2.1.002)</div>
+          <div class="ret-item-ret">
+            <div class="ret-item-label-r">INSS Retido (2.1.002) <span style="font-size:9px;color:var(--mu)">sobre MO</span></div>
             <div class="ret-item-row">
-              <input class="ret-aliq" type="number" id="aliq-inss" value="0" min="0" max="100" step="0.01">
+              <input class="ret-aliq-r" type="number" id="aliq-inss" value="0" min="0" max="100" step="0.01">
               <span class="ret-aliq-sym">%</span>
               <span class="ret-valor" id="val-inss">R$ 0,00</span>
             </div>
           </div>
-          <div class="ret-item">
-            <div class="ret-item-label">IRRF Retido (2.1.003)</div>
+          <div class="ret-item-ret">
+            <div class="ret-item-label-r">IRRF Retido (2.1.003) <span style="font-size:9px;color:var(--mu)">sobre total</span></div>
             <div class="ret-item-row">
-              <input class="ret-aliq" type="number" id="aliq-irrf" value="0" min="0" max="100" step="0.01">
+              <input class="ret-aliq-r" type="number" id="aliq-irrf" value="0" min="0" max="100" step="0.01">
               <span class="ret-aliq-sym">%</span>
               <span class="ret-valor" id="val-irrf">R$ 0,00</span>
             </div>
           </div>
-          <div class="ret-item">
-            <div class="ret-item-label">PCC/CSRF (2.1.004)</div>
+          <div class="ret-item-ret">
+            <div class="ret-item-label-r">PCC/CSRF (2.1.004) <span style="font-size:9px;color:var(--mu)">sobre total</span></div>
             <div class="ret-item-row">
-              <input class="ret-aliq" type="number" id="aliq-pcc" value="0" min="0" max="100" step="0.01">
+              <input class="ret-aliq-r" type="number" id="aliq-pcc" value="0" min="0" max="100" step="0.01">
               <span class="ret-aliq-sym">%</span>
               <span class="ret-valor" id="val-pcc">R$ 0,00</span>
+            </div>
+          </div>
+          <div class="ret-item-ret">
+            <div class="ret-item-label-r">ICMS <span style="font-size:9px;color:var(--mu)">sobre total</span></div>
+            <div class="ret-item-row">
+              <input class="ret-aliq-r" type="number" id="aliq-icms" value="0" min="0" max="30" step="0.01">
+              <span class="ret-aliq-sym">%</span>
+              <span class="ret-valor" id="val-icms">R$ 0,00</span>
             </div>
           </div>
         </div>
@@ -218,6 +260,8 @@ function _html() {
       </div>
     </div>
 
+    ${anexoHTML('rec')}
+
     <div class="form-footer">
       <button class="btn-salvar" id="btn-salvar">
         <div class="spinner" id="spinner" style="display:none"></div>
@@ -225,7 +269,6 @@ function _html() {
       </button>
       <button class="btn-limpar" id="btn-limpar">Limpar</button>
       <span id="contador-bd" style="font-size:10px;font-weight:700;color:var(--mu);background:var(--sf2);border:1px solid var(--bd);border-radius:2px;padding:3px 8px">0 receitas</span>
-      <button class="btn-nav" id="btn-ir-despesa" style="margin-left:auto">← Lançar Despesa</button>
     </div>
   </div>
 
@@ -254,21 +297,26 @@ function _bindEventos() {
   document.getElementById('f-tipo-receita').addEventListener('change', _onTipoReceita);
   document.getElementById('toggle-retencoes').addEventListener('change', _toggleRetencoes);
   document.getElementById('f-valor').addEventListener('input', e => { formatarValorInput(e.target); _calcularRetencoes(); });
-  ['aliq-iss', 'aliq-inss', 'aliq-irrf', 'aliq-pcc'].forEach(id =>
+  ['aliq-iss', 'aliq-inss', 'aliq-irrf', 'aliq-pcc', 'aliq-icms'].forEach(id =>
     document.getElementById(id).addEventListener('input', _calcularRetencoes)
   );
   document.getElementById('btn-salvar').addEventListener('click', _salvar);
   document.getElementById('btn-limpar').addEventListener('click', _limpar);
-  document.getElementById('btn-ir-despesa').addEventListener('click', () => window.app.navigate('lancar-despesa'));
 }
 
 function _onContrato() {
   const num  = document.getElementById('f-contrato').value;
   const info = document.getElementById('contrato-info');
-  if (!num) { info.classList.remove('visivel'); document.getElementById('f-cc').value = ''; return; }
+  if (!num) {
+    _contratoSelecionado = null;
+    info.classList.remove('visivel');
+    document.getElementById('f-cc').value = '';
+    return;
+  }
 
   const c = _contratos.find(x => x.numContrato === num);
   if (!c) return;
+  _contratoSelecionado = c;
 
   document.getElementById('f-cc').value = c.ccCodigo;
   const saldo = c.valorTotal - (c.valorExecutado || 0);
@@ -281,11 +329,22 @@ function _onContrato() {
   document.getElementById('ci-prazo').textContent     = 'D+' + (c.prazo || 60) + ' dias';
   document.getElementById('ci-status').textContent    = c.status === 'ativo' ? 'Ativo' : 'Pausado';
 
+  // Exibe % MO por imposto
+  const issPercMO  = c.retencoes?.issPercMO  ?? c.percMO ?? 100;
+  const inssPercMO = c.retencoes?.inssPercMO ?? c.percMO ?? 100;
+  const moInfo = document.getElementById('ret-mo-info');
+  if (moInfo) {
+    document.getElementById('ret-mo-iss-pct').textContent  = issPercMO;
+    document.getElementById('ret-mo-inss-pct').textContent = inssPercMO;
+    moInfo.style.display = '';
+  }
+
   if (c.retencoes) {
     document.getElementById('aliq-iss').value  = c.retencoes.iss  || 0;
     document.getElementById('aliq-inss').value = c.retencoes.inss || 0;
     document.getElementById('aliq-irrf').value = c.retencoes.irrf || 0;
     document.getElementById('aliq-pcc').value  = c.retencoes.pcc  || 0;
+    document.getElementById('aliq-icms').value = c.retencoes.icms || 0;
     const temRetencao = Object.values(c.retencoes).some(v => v > 0);
     if (temRetencao) {
       document.getElementById('toggle-retencoes').checked = true;
@@ -296,9 +355,7 @@ function _onContrato() {
 }
 
 function _onTipoReceita() {
-  const tipo    = document.getElementById('f-tipo-receita').value;
-  const secRet  = document.getElementById('secao-retencoes');
-  secRet.style.display = tipo === 'financeira' ? 'none' : '';
+  // Seção de retenções sempre visível — usuário decide se aplica via toggle
 }
 
 function _toggleRetencoes() {
@@ -308,24 +365,33 @@ function _toggleRetencoes() {
 }
 
 function _calcularRetencoes() {
-  const bruto    = parseMoeda(document.getElementById('f-valor').value);
+  const bruto      = parseMoeda(document.getElementById('f-valor').value);
+  const c          = _contratoSelecionado;
+  const percMOiss  = (c?.retencoes?.issPercMO  ?? c?.percMO ?? 100) / 100;
+  const percMOinss = (c?.retencoes?.inssPercMO ?? c?.percMO ?? 100) / 100;
+
   const aliqISS  = parseFloat(document.getElementById('aliq-iss').value)  || 0;
   const aliqINSS = parseFloat(document.getElementById('aliq-inss').value) || 0;
   const aliqIRRF = parseFloat(document.getElementById('aliq-irrf').value) || 0;
   const aliqPCC  = parseFloat(document.getElementById('aliq-pcc').value)  || 0;
+  const aliqICMS = parseFloat(document.getElementById('aliq-icms').value) || 0;
 
-  const valISS  = bruto * aliqISS  / 100;
-  const valINSS = bruto * aliqINSS / 100;
-  const valIRRF = bruto * aliqIRRF / 100;
-  const valPCC  = bruto * aliqPCC  / 100;
-  const total   = valISS + valINSS + valIRRF + valPCC;
+  // ISS e INSS incidem sobre suas respectivas bases de Mão de Obra
+  const valISS  = bruto * percMOiss  * aliqISS  / 100;
+  const valINSS = bruto * percMOinss * aliqINSS / 100;
+  // IRRF, PCC e ICMS incidem sobre o valor total
+  const valIRRF = bruto  * aliqIRRF / 100;
+  const valPCC  = bruto  * aliqPCC  / 100;
+  const valICMS = bruto  * aliqICMS / 100;
+  const total   = valISS + valINSS + valIRRF + valPCC + valICMS;
   const liquido = bruto - total;
 
-  document.getElementById('val-iss').textContent   = fmtMfull(valISS);
-  document.getElementById('val-inss').textContent  = fmtMfull(valINSS);
-  document.getElementById('val-irrf').textContent  = fmtMfull(valIRRF);
-  document.getElementById('val-pcc').textContent   = fmtMfull(valPCC);
-  document.getElementById('ret-total').textContent = fmtMfull(total);
+  document.getElementById('val-iss').textContent  = fmtMfull(valISS);
+  document.getElementById('val-inss').textContent = fmtMfull(valINSS);
+  document.getElementById('val-irrf').textContent = fmtMfull(valIRRF);
+  document.getElementById('val-pcc').textContent  = fmtMfull(valPCC);
+  document.getElementById('val-icms').textContent = fmtMfull(valICMS);
+  document.getElementById('ret-total').textContent   = fmtMfull(total);
   document.getElementById('ret-liquido').textContent = 'Líquido: ' + fmtMfull(liquido);
 }
 
@@ -343,40 +409,121 @@ async function _salvar() {
     const contrato = document.getElementById('f-contrato').value;
     const nrDoc   = document.getElementById('f-doc').value.trim();
 
+    // Modo edição
+    if (_editId) {
+      await atualizarLancamento(_editId, {
+        tipo: 'Receita',
+        data, mes: mesNome(data), ano: d.getFullYear(),
+        categoria:     '1.1.001',
+        categoriaDesc: '1.1.001 — Receita de Serviços (NFS-e)',
+        cc, formaPgto: document.getElementById('f-forma').value,
+        valor: bruto,
+        info: document.getElementById('f-referencia').value.trim() || document.getElementById('f-info').value.trim(),
+        nrDoc, contrato,
+        statusPagamento: 'pendente',
+        editadoPor: _perfil?.nome || 'Sistema',
+        editadoEm:  new Date().toISOString(),
+      });
+
+      // Deleta retenções antigas e recria conforme aliquotas atuais
+      for (const r of _retencoesAntigas) await deletarLancamento(r.id);
+      _retencoesAntigas = [];
+
+      const comRetEdit = document.getElementById('toggle-retencoes').checked;
+      if (comRetEdit) {
+        const ce = _contratoSelecionado;
+        const percMOissE  = (ce?.retencoes?.issPercMO  ?? ce?.percMO ?? 100) / 100;
+        const percMOinssE = (ce?.retencoes?.inssPercMO ?? ce?.percMO ?? 100) / 100;
+        const retDefsEdit = [
+          { id: '2.1.001', desc: 'ISS Retido',      aliqId: 'aliq-iss',  base: bruto * percMOissE  },
+          { id: '2.1.002', desc: 'INSS Retido',     aliqId: 'aliq-inss', base: bruto * percMOinssE },
+          { id: '2.1.003', desc: 'IRRF Retido',     aliqId: 'aliq-irrf', base: bruto               },
+          { id: '2.1.004', desc: 'PCC/CSRF Retido', aliqId: 'aliq-pcc',  base: bruto               },
+          { id: '2.1.005', desc: 'ICMS Retido',     aliqId: 'aliq-icms', base: bruto               },
+        ];
+        for (const r of retDefsEdit) {
+          const aliq = parseFloat(document.getElementById(r.aliqId).value) || 0;
+          if (aliq <= 0) continue;
+          const valor = -(r.base * aliq / 100);
+          await salvarLancamento({
+            tipo: 'Gasto', data, mes: mesNome(data), ano: d.getFullYear(),
+            categoria: r.id, categoriaDesc: r.id + ' — ' + r.desc,
+            cc, formaPgto: 'Retenção',
+            valor, aliq,
+            info: 'Retenção automática — NFS-e: ' + nrDoc,
+            nrDoc, contrato,
+            lancadoPor: _perfil?.nome || 'Sistema',
+          });
+        }
+      }
+
+      mostrarMsg('msg-feedback', 'sucesso', 'Receita atualizada com sucesso!');
+      setTimeout(() => window.app.navigate('base-dados'), 1200);
+      return;
+    }
+
+    // Upload do anexo (se houver)
+    let anexoUrl = null, anexoNome = null;
+    const anexoFile = _anexo?.getFile();
+    if (anexoFile) {
+      try {
+        anexoUrl  = await uploadAnexo('receitas', cc, nrDoc, anexoFile);
+        anexoNome = anexoFile.name;
+      } catch (err) {
+        mostrarMsg('msg-feedback', 'erro', 'Erro ao enviar anexo: ' + err.message);
+        _setLoading(false);
+        return;
+      }
+    }
+
     // Lançamento principal — receita
     await salvarLancamento({
       tipo:          'Receita',
       data, mes: mesNome(data), ano: d.getFullYear(),
-      categoria:     '1.1.001',
-      categoriaDesc: '1.1.001 — Receita de Serviços (NFS-e)',
+      categoria:      '1.1.001',
+      categoriaDesc:  '1.1.001 — Receita de Serviços (NFS-e)',
       cc, formaPgto: document.getElementById('f-forma').value,
       valor: bruto,
       info:  document.getElementById('f-referencia').value.trim() || document.getElementById('f-info').value.trim(),
       nrDoc, contrato,
+      statusPagamento: 'pendente',
       lancadoPor: _perfil?.nome || 'Sistema',
+      ...(anexoUrl ? { anexoUrl, anexoNome } : {}),
     });
+
+    // Atualiza saldo do contrato
+    if (_contratoSelecionado?.id) {
+      await atualizarContrato(_contratoSelecionado.id, {
+        valorFaturado:  increment(bruto),
+        valorExecutado: increment(bruto),
+      });
+    }
 
     // Lançamentos de retenção automáticos
     const comRetencoes = document.getElementById('toggle-retencoes').checked;
     let totalRetido = 0;
 
     if (comRetencoes) {
+      const cn = _contratoSelecionado;
+      const percMOissN  = (cn?.retencoes?.issPercMO  ?? cn?.percMO ?? 100) / 100;
+      const percMOinssN = (cn?.retencoes?.inssPercMO ?? cn?.percMO ?? 100) / 100;
       const retDefs = [
-        { id: '2.1.001', desc: 'ISS Retido',      aliq: 'aliq-iss' },
-        { id: '2.1.002', desc: 'INSS Retido',     aliq: 'aliq-inss' },
-        { id: '2.1.003', desc: 'IRRF Retido',     aliq: 'aliq-irrf' },
-        { id: '2.1.004', desc: 'PCC/CSRF Retido', aliq: 'aliq-pcc' },
+        { id: '2.1.001', desc: 'ISS Retido',      aliq: 'aliq-iss',  base: bruto * percMOissN  },
+        { id: '2.1.002', desc: 'INSS Retido',     aliq: 'aliq-inss', base: bruto * percMOinssN },
+        { id: '2.1.003', desc: 'IRRF Retido',     aliq: 'aliq-irrf', base: bruto               },
+        { id: '2.1.004', desc: 'PCC/CSRF Retido', aliq: 'aliq-pcc',  base: bruto               },
+        { id: '2.1.005', desc: 'ICMS Retido',     aliq: 'aliq-icms', base: bruto               },
       ];
       for (const r of retDefs) {
         const aliq = parseFloat(document.getElementById(r.aliq).value) || 0;
         if (aliq <= 0) continue;
-        const valor = -(bruto * aliq / 100);
+        const valor = -(r.base * aliq / 100);
         totalRetido += Math.abs(valor);
         await salvarLancamento({
           tipo: 'Gasto', data, mes: mesNome(data), ano: d.getFullYear(),
           categoria: r.id, categoriaDesc: r.id + ' — ' + r.desc,
           cc, formaPgto: 'Retenção',
-          valor,
+          valor, aliq,
           info: 'Retenção automática — NFS-e: ' + nrDoc,
           nrDoc, contrato,
           lancadoPor: _perfil?.nome || 'Sistema',
@@ -422,7 +569,7 @@ function _validar() {
 function _setLoading(on) {
   document.getElementById('btn-salvar').disabled = on;
   document.getElementById('spinner').style.display = on ? 'block' : 'none';
-  document.getElementById('btn-txt').textContent = on ? 'Salvando...' : '✓ Lançar Receita';
+  document.getElementById('btn-txt').textContent = on ? 'Salvando...' : (_editId ? '✓ Salvar Alterações' : '✓ Lançar Receita');
 }
 
 function _setHoje() {
@@ -431,6 +578,7 @@ function _setHoje() {
 }
 
 function _limpar() {
+  if (_editId) { window.app.navigate('base-dados'); return; }
   _setHoje();
   ['f-doc', 'f-referencia', 'f-info', 'f-valor'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('f-forma').value        = '';
@@ -438,12 +586,61 @@ function _limpar() {
   document.getElementById('f-contrato').value     = '';
   document.getElementById('f-cc').value           = '';
   document.getElementById('contrato-info').classList.remove('visivel');
+  _contratoSelecionado = null;
   document.getElementById('toggle-retencoes').checked = false;
   document.getElementById('retencoes-box').classList.remove('visivel');
-  ['aliq-iss', 'aliq-inss', 'aliq-irrf', 'aliq-pcc'].forEach(id => { document.getElementById(id).value = 0; });
-  ['val-iss', 'val-inss', 'val-irrf', 'val-pcc', 'ret-total'].forEach(id => { document.getElementById(id).textContent = 'R$ 0,00'; });
+  const moInfo = document.getElementById('ret-mo-info');
+  if (moInfo) moInfo.style.display = 'none';
+  ['aliq-iss', 'aliq-inss', 'aliq-irrf', 'aliq-pcc', 'aliq-icms'].forEach(id => { document.getElementById(id).value = 0; });
+  ['val-iss', 'val-inss', 'val-irrf', 'val-pcc', 'val-icms', 'ret-total'].forEach(id => { document.getElementById(id).textContent = 'R$ 0,00'; });
   document.getElementById('ret-liquido').textContent = 'Líquido: R$ 0,00';
+  _anexo?.clear();
   esconderMsg('msg-feedback');
+}
+
+// ── Modo edição ───────────────────────────────────
+async function _carregarParaEdicao() {
+  try {
+    const l = await buscarLancamento(_editId);
+    if (!l) { mostrarMsg('msg-feedback', 'erro', 'Lançamento não encontrado.'); return; }
+
+    document.getElementById('edit-banner').style.display = 'flex';
+    document.getElementById('f-data').value        = l.data || '';
+    document.getElementById('f-doc').value         = l.nrDoc || '';
+    document.getElementById('f-forma').value       = l.formaPgto || '';
+    document.getElementById('f-referencia').value  = l.info || '';
+
+    const valorEl = document.getElementById('f-valor');
+    valorEl.value = Math.abs(l.valor || 0).toFixed(2).replace('.', ',');
+    formatarValorInput(valorEl);
+
+    if (l.contrato) {
+      document.getElementById('f-contrato').value = l.contrato;
+      _onContrato();
+    }
+
+    // Retenções
+    if (l.nrDoc) {
+      const rets = await buscarRetencoesDaReceita(l.nrDoc);
+      _retencoesAntigas = rets;
+      if (rets.length > 0) {
+        document.getElementById('toggle-retencoes').checked = true;
+        _toggleRetencoes();
+        const aliqMap = { '2.1.001': 'aliq-iss', '2.1.002': 'aliq-inss', '2.1.003': 'aliq-irrf', '2.1.004': 'aliq-pcc', '2.1.005': 'aliq-icms' };
+        rets.forEach(r => {
+          const inputId = aliqMap[r.categoria];
+          if (inputId && r.aliq != null) document.getElementById(inputId).value = r.aliq;
+        });
+        _calcularRetencoes();
+      }
+    }
+
+    if (l.anexoUrl) showExistingAnexo('rec', l.anexoUrl, l.anexoNome);
+    document.getElementById('btn-txt').textContent = '✓ Salvar Alterações';
+    document.getElementById('btn-limpar').textContent = '← Cancelar';
+  } catch (err) {
+    mostrarMsg('msg-feedback', 'erro', 'Erro ao carregar lançamento: ' + err.message);
+  }
 }
 
 // ── Histórico ─────────────────────────────────────

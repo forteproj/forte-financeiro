@@ -202,3 +202,66 @@
 @media (max-width: 768px) {
   .bd-filtros > * { flex: 1 1 140px; }
 }
+
+/* ── Widget de Anexo de NF ── */
+.anexo-drop-zone {
+  border: 2px dashed var(--bd2);
+  border-radius: var(--raio);
+  padding: 20px 16px;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+  background: var(--sf2); text-align: center;
+}
+.anexo-drop-zone:hover, .anexo-drag {
+  border-color: var(--ambm); background: var(--abg);
+}
+.anexo-drop-txt {
+  font-size: 12px; font-weight: 700; color: var(--tx);
+}
+.anexo-drop-sub {
+  font-size: 10px; color: var(--mu); font-weight: 600; letter-spacing: .3px;
+}
+.anexo-preview {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--sf2); border: 1px solid var(--bd);
+  border-radius: var(--raio); padding: 10px 14px;
+  flex-wrap: wrap;
+}
+.anexo-tag {
+  font-size: 9px; font-weight: 800; letter-spacing: .5px;
+  text-transform: uppercase; padding: 3px 8px;
+  border-radius: 3px; white-space: nowrap; flex-shrink: 0;
+}
+.anexo-tag-xml { color: var(--verde);    background: var(--verde-bg); }
+.anexo-tag-pdf { color: var(--vermelho); background: var(--verm-bg);  }
+.anexo-tag-img { color: var(--mu);       background: var(--sf3);       }
+.anexo-nome {
+  font-size: 11px; font-weight: 700; color: var(--tx);
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.anexo-size { font-size: 10px; color: var(--mu); white-space: nowrap; }
+.btn-anexo-rm {
+  background: none; border: 1px solid var(--bd);
+  border-radius: 3px; padding: 2px 9px;
+  font-size: 10px; font-weight: 700; color: var(--mu); cursor: pointer;
+  transition: color .1s, border-color .1s;
+}
+.btn-anexo-rm:hover { color: var(--vermelho); border-color: var(--vermelho); }
+.anexo-existente {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 6px; font-size: 11px; color: var(--mu);
+}
+.anexo-link-btn {
+  color: var(--azul); font-size: 11px; font-weight: 700;
+  text-decoration: none;
+}
+.anexo-link-btn:hover { text-decoration: underline; }
+
+/* ── Ícone de anexo na tabela (Base de Dados) ── */
+.btn-anexo-td {
+  background: none; border: none; padding: 0 0 0 5px;
+  cursor: pointer; font-size: 13px; vertical-align: middle;
+  opacity: .65; line-height: 1;
+}
+.btn-anexo-td:hover { opacity: 1; }

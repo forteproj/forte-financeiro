@@ -1,4 +1,4 @@
-import { carregarContratos, atualizarContrato } from '../db.js';
+import { carregarContratos, atualizarContrato, deletarContrato } from '../db.js';
 import { fmtM, fmtMfull, fmtData, tipoIconeArquivo, statusLabel } from '../utils.js';
 
 let _contratos = [];
@@ -57,9 +57,7 @@ function _html(perfil) {
     <select class="filtro-input" id="f-status">
       <option value="">Todos os status</option>
       <option value="ativo">Ativo</option>
-      <option value="pausado">Pausado</option>
       <option value="encerrado">Encerrado</option>
-      <option value="em_licitacao">Em licitação</option>
     </select>
     <div class="semaforo-leg">
       <span class="sem-item"><span class="sem sem-verde"></span>Em dia</span>
@@ -163,6 +161,12 @@ function _html(perfil) {
           <div class="detalhe-valor" id="m-cad">—</div>
         </div>
       </div>
+      <!-- RETENÇÕES -->
+      <div class="detalhe-item" style="margin-bottom:12px">
+        <div class="detalhe-label" style="margin-bottom:6px">Retenções na fonte cadastradas</div>
+        <div id="m-retencoes" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+
       <div class="detalhe-item" style="margin-bottom:12px">
         <div class="detalhe-label">Contato fiscal / financeiro</div>
         <div class="detalhe-valor" id="m-contato" style="font-size:12px;font-weight:600">—</div>
@@ -178,6 +182,8 @@ function _html(perfil) {
     </div>
     <div class="modal-footer">
       <button class="btn-encerrar" id="btn-encerrar" style="display:none">Encerrar contrato</button>
+      <button class="btn-encerrar" id="btn-editar"   style="display:none;background:var(--azul);color:#fff;border-color:var(--azul)">Editar</button>
+      <button class="btn-encerrar" id="btn-excluir"  style="display:none;background:var(--vermelho);color:#fff;border-color:var(--vermelho)">Excluir</button>
       <span style="margin-left:auto;font-size:10px;font-weight:700;color:var(--mu)" id="m-id">—</span>
     </div>
   </div>
@@ -200,6 +206,8 @@ function _bindModal() {
   const overlay = document.getElementById('modal-overlay');
   document.getElementById('btn-fechar-modal')?.addEventListener('click', _fecharModal);
   document.getElementById('btn-encerrar')?.addEventListener('click', _encerrarContrato);
+  document.getElementById('btn-editar')?.addEventListener('click', _editarContrato);
+  document.getElementById('btn-excluir')?.addEventListener('click', _excluirContrato);
   overlay?.addEventListener('click', e => { if (e.target === overlay) _fecharModal(); });
 }
 
@@ -419,9 +427,35 @@ function _abrirModal(id) {
 
   document.getElementById('m-id').textContent = 'ID: ' + c.id;
 
+  // Retenções
+  const ret        = c.retencoes || {};
+  const issPercMO  = ret.issPercMO  ?? c.percMO ?? 100;
+  const inssPercMO = ret.inssPercMO ?? c.percMO ?? 100;
+  const retTags = [
+    { label: 'ISS',      val: ret.iss,    cor: 'var(--vermelho)', sufixo: '%' },
+    ...(ret.iss  > 0 ? [{ label: 'MO-ISS',  val: issPercMO,  cor: 'var(--amb)', sufixo: '%' }] : []),
+    { label: 'INSS',     val: ret.inss,   cor: 'var(--vermelho)', sufixo: '%' },
+    ...(ret.inss > 0 ? [{ label: 'MO-INSS', val: inssPercMO, cor: 'var(--amb)', sufixo: '%' }] : []),
+    { label: 'IRRF',     val: ret.irrf,   cor: 'var(--vermelho)', sufixo: '%' },
+    { label: 'PCC',      val: ret.pcc,    cor: 'var(--vermelho)', sufixo: '%' },
+    { label: 'ICMS',     val: ret.icms,   cor: 'var(--vermelho)', sufixo: '%' },
+  ];
+  document.getElementById('m-retencoes').innerHTML = retTags.map(t => {
+    const v = parseFloat(t.val) || 0;
+    return `<span style="
+      display:inline-flex;align-items:center;gap:4px;
+      background:var(--sf2);border:1px solid var(--bd);
+      border-radius:3px;padding:3px 8px;font-size:10px;font-weight:700">
+      <span style="color:var(--mu)">${t.label}</span>
+      <span style="color:${v > 0 ? t.cor : 'var(--mu)'}">${v > 0 ? v + t.sufixo : '—'}</span>
+    </span>`;
+  }).join('');
+
+  const isAdmin    = _perfil?.nivel === 'administrador';
   const podeEditar = _perfil?.nivel !== 'operacao';
-  const btnEnc = document.getElementById('btn-encerrar');
-  btnEnc.style.display = podeEditar && c.status === 'ativo' ? '' : 'none';
+  document.getElementById('btn-encerrar').style.display = podeEditar && c.status === 'ativo' ? '' : 'none';
+  document.getElementById('btn-editar').style.display   = isAdmin ? '' : 'none';
+  document.getElementById('btn-excluir').style.display  = isAdmin ? '' : 'none';
 
   document.getElementById('modal-overlay').classList.add('aberto');
 }
@@ -441,6 +475,31 @@ async function _encerrarContrato() {
   _renderKPIs();
   _renderBanner();
   _renderTabela();
+}
+
+function _editarContrato() {
+  if (!_contratoAberto || _perfil?.nivel !== 'administrador') return;
+  const id = _contratoAberto.id;
+  _fecharModal();
+  window.app.navigate('lancar-contrato/' + id);
+}
+
+async function _excluirContrato() {
+  if (!_contratoAberto || _perfil?.nivel !== 'administrador') return;
+  const c = _contratoAberto;
+  if (!confirm(
+    `Excluir permanentemente o contrato?\n\n${c.numContrato} — ${c.cliente}\n\nEsta ação não pode ser desfeita.`
+  )) return;
+  try {
+    await deletarContrato(c.id);
+    _contratos = _contratos.filter(x => x.id !== c.id);
+    _fecharModal();
+    _renderKPIs();
+    _renderBanner();
+    _renderTabela();
+  } catch (err) {
+    alert('Erro ao excluir: ' + err.message);
+  }
 }
 
 function _tipoLabel(t) {

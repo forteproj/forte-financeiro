@@ -5,12 +5,16 @@ import { escutarAuth, carregarPerfil, sair, temPermissao } from './auth.js';
 import { router } from './router.js';
 
 const NAV_ITEMS = [
-  { rota: 'lancar-despesa',  label: 'Lançar Despesa',  nivel: 'operacao'   },
-  { rota: 'lancar-receita',  label: 'Lançar Receita',  nivel: 'financeiro' },
-  { rota: 'contratos',       label: 'Contratos',        nivel: 'financeiro' },
-  { rota: 'lancar-contrato', label: 'Novo Contrato',    nivel: 'financeiro' },
-  { rota: 'base-dados',      label: 'Base de Dados',    nivel: 'financeiro' },
-  { rota: 'plano-contas',    label: 'Plano de Contas',  nivel: 'operacao'   },
+  { rota: 'lancar-despesa',  label: 'Lançar Despesa',   nivel: 'operacao'   },
+  { rota: 'lancar-receita',  label: 'Lançar Receita',   nivel: 'financeiro' },
+  { rota: 'contratos',       label: 'Contratos',         nivel: 'financeiro' },
+  { rota: 'lancar-contrato', label: 'Novo Contrato',     nivel: 'financeiro' },
+  { rota: 'base-dados',      label: 'Base de Dados',     nivel: 'financeiro' },
+  { rota: 'kpis',            label: 'KPIs',              nivel: 'financeiro' },
+  { rota: 'fluxo-caixa',     label: 'Fluxo de Caixa',   nivel: 'financeiro' },
+  { rota: 'dre-comparativo', label: 'DRE Comparativo',   nivel: 'financeiro' },
+  { rota: 'dre-por-cc',      label: 'DRE por CC',        nivel: 'financeiro' },
+  { rota: 'plano-contas',    label: 'Plano de Contas',   nivel: 'operacao'   },
 ];
 
 window.app = {

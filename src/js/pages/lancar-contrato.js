@@ -1,18 +1,46 @@
-import { criarContrato, buscarContratoPorNum } from '../db.js';
+import { criarContrato, atualizarContrato, buscarContrato, buscarContratoPorCC } from '../db.js';
 import { formatarValorInput, parseMoeda, tipoIconeArquivo, fmtBytes, mostrarMsg, esconderMsg, msgHTML } from '../utils.js';
 
-let _perfil = null;
-let _arquivos = [];
+let _perfil          = null;
+let _arquivos        = [];
+let _modoEdicao      = false;
+let _contratoId      = null;
 
 export async function mount(container, perfil) {
-  _perfil = perfil;
-  _arquivos = [];
+  _perfil     = perfil;
+  _arquivos   = [];
+  _modoEdicao = false;
+  _contratoId = null;
+
+  // Detecta modo edição via hash: #lancar-contrato/ID
+  const hashId = window.location.hash.split('/')[1];
+
   container.innerHTML = _html();
   _bindEventos();
+
+  if (hashId) {
+    _setLoading(true);
+    try {
+      const c = await buscarContrato(hashId);
+      if (c) {
+        _modoEdicao = true;
+        _contratoId = c.id;
+        _preencherFormulario(c);
+        document.getElementById('btn-txt').textContent    = '✓ Salvar Alterações';
+        document.querySelector('.page-sub').textContent   = 'Editando contrato existente · Campos com * são obrigatórios';
+      }
+    } catch (err) {
+      mostrarMsg('msg-feedback', 'erro', 'Erro ao carregar contrato: ' + err.message);
+    } finally {
+      _setLoading(false);
+    }
+  }
 }
 
 export function destroy() {
-  _arquivos = [];
+  _arquivos   = [];
+  _modoEdicao = false;
+  _contratoId = null;
 }
 
 // ── HTML ──────────────────────────────────────────
@@ -89,9 +117,7 @@ function _html() {
           <label>Status <span style="color:var(--vermelho)">*</span></label>
           <select id="f-status">
             <option value="ativo">🟢 Ativo</option>
-            <option value="pausado">🟡 Pausado</option>
             <option value="encerrado">🔴 Encerrado</option>
-            <option value="em_licitacao">🔵 Em licitação</option>
           </select>
         </div>
         <div class="campo">
@@ -135,40 +161,77 @@ function _html() {
       <div class="ret-grid-cont">
         <div class="ret-item">
           <div class="ret-item-label">ISS Retido <span style="font-size:9px;color:var(--bd2);font-weight:600">2.1.001</span></div>
-          <div class="ret-row">
-            <input class="ret-aliq" type="number" id="f-ret-iss" value="0" min="0" max="10" step="0.0001">
-            <span class="ret-sym">%</span>
+          <div style="display:flex;gap:12px">
+            <div>
+              <div style="font-size:9px;color:var(--mu);font-weight:700;margin-bottom:3px">Alíquota ISS</div>
+              <div class="ret-row">
+                <input class="ret-aliq" type="number" id="f-ret-iss" value="0" min="0" max="10" step="0.0001">
+                <span class="ret-sym">%</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--mu);font-weight:700;margin-bottom:3px">% Mão de Obra</div>
+              <div class="ret-row">
+                <input class="ret-aliq" type="number" id="f-mo-iss" value="100" min="0" max="100" step="0.01">
+                <span class="ret-sym">%</span>
+              </div>
+            </div>
           </div>
           <div class="ret-hint">Alíquota municipal · Padrão: 2,5% a 5%</div>
         </div>
         <div class="ret-item">
           <div class="ret-item-label">INSS Retido <span style="font-size:9px;color:var(--bd2);font-weight:600">2.1.002</span></div>
-          <div class="ret-row">
-            <input class="ret-aliq" type="number" id="f-ret-inss" value="0" min="0" max="20" step="0.0001">
-            <span class="ret-sym">%</span>
+          <div style="display:flex;gap:12px">
+            <div>
+              <div style="font-size:9px;color:var(--mu);font-weight:700;margin-bottom:3px">Alíquota INSS</div>
+              <div class="ret-row">
+                <input class="ret-aliq" type="number" id="f-ret-inss" value="0" min="0" max="20" step="0.0001">
+                <span class="ret-sym">%</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--mu);font-weight:700;margin-bottom:3px">% Mão de Obra</div>
+              <div class="ret-row">
+                <input class="ret-aliq" type="number" id="f-mo-inss" value="100" min="0" max="100" step="0.01">
+                <span class="ret-sym">%</span>
+              </div>
+            </div>
           </div>
           <div class="ret-hint">Art. 31 Lei 8.212 · Padrão: 11%</div>
         </div>
         <div class="ret-item">
           <div class="ret-item-label">IRRF Retido <span style="font-size:9px;color:var(--bd2);font-weight:600">2.1.003</span></div>
+          <div style="font-size:9px;margin-bottom:3px;visibility:hidden">_</div>
           <div class="ret-row">
             <input class="ret-aliq" type="number" id="f-ret-irrf" value="0" min="0" max="10" step="0.0001">
             <span class="ret-sym">%</span>
           </div>
-          <div class="ret-hint">IR na fonte · Padrão: 1,5% a 4,8%</div>
+          <div class="ret-hint">IR na fonte · sobre valor total · Padrão: 1,5% a 4,8%</div>
         </div>
         <div class="ret-item">
           <div class="ret-item-label">PCC / CSRF <span style="font-size:9px;color:var(--bd2);font-weight:600">2.1.004</span></div>
+          <div style="font-size:9px;margin-bottom:3px;visibility:hidden">_</div>
           <div class="ret-row">
             <input class="ret-aliq" type="number" id="f-ret-pcc" value="0" min="0" max="10" step="0.0001">
             <span class="ret-sym">%</span>
           </div>
-          <div class="ret-hint">PIS+COFINS+CSLL · Padrão: 4,65%</div>
+          <div class="ret-hint">PIS+COFINS+CSLL · sobre valor total · Padrão: 4,65%</div>
+        </div>
+        <div class="ret-item">
+          <div class="ret-item-label">ICMS <span style="font-size:9px;color:var(--bd2);font-weight:600">Est.</span></div>
+          <div style="font-size:9px;margin-bottom:3px;visibility:hidden">_</div>
+          <div class="ret-row">
+            <input class="ret-aliq" type="number" id="f-ret-icms" value="0" min="0" max="30" step="0.0001">
+            <span class="ret-sym">%</span>
+          </div>
+          <div class="ret-hint">Imposto estadual · sobre valor total</div>
         </div>
       </div>
       <div style="background:var(--abg);border:1px solid var(--abdr);border-radius:var(--raio);padding:10px 14px;font-size:11px;color:var(--txs);line-height:1.6;margin-top:12px">
-        <strong style="color:var(--amb)">Como funciona:</strong> as alíquotas aqui cadastradas são puxadas automaticamente ao lançar uma receita deste contrato.
-        Deixe em <strong>0</strong> para os impostos que não se aplicam.
+        <strong style="color:var(--amb)">Como funciona:</strong> ISS e INSS incidem sobre o valor de <strong>Mão de Obra</strong> (configure a % MO por imposto acima).
+        IRRF, PCC e ICMS incidem sobre o <strong>valor total</strong> da NFS-e.
+        As alíquotas são puxadas automaticamente ao lançar receita deste contrato.
+        Deixe em <strong>0</strong> para impostos que não se aplicam.
       </div>
     </div>
 
@@ -265,6 +328,37 @@ function _renderArquivos() {
   );
 }
 
+// ── Preencher em modo edição ───────────────────────
+function _preencherFormulario(c) {
+  const sig = (c.ccCodigo || '').replace('CC-CLI-', '');
+  document.getElementById('f-cliente').value      = c.cliente      || '';
+  document.getElementById('f-num-contrato').value = c.numContrato  || '';
+  document.getElementById('f-cc-codigo').value    = sig;
+  document.getElementById('f-valor-total').value  = (c.valorTotal  || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  document.getElementById('f-adiantamento').value = (c.adiantamento|| 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  document.getElementById('f-inicio').value       = c.inicio       || '';
+  document.getElementById('f-fim').value          = c.fim          || '';
+  document.getElementById('f-prazo').value        = c.prazo        || '60';
+  document.getElementById('f-status').value       = c.status       || 'ativo';
+  document.getElementById('f-tipo').value         = c.tipo         || 'municipal';
+  document.getElementById('f-mo-iss').value       = c.retencoes?.issPercMO  ?? c.percMO ?? 100;
+  document.getElementById('f-mo-inss').value      = c.retencoes?.inssPercMO ?? c.percMO ?? 100;
+  document.getElementById('f-contato-nome').value  = c.contato?.nome  || '';
+  document.getElementById('f-contato-cargo').value = c.contato?.cargo || '';
+  document.getElementById('f-contato-email').value = c.contato?.email || '';
+  document.getElementById('f-contato-tel').value   = c.contato?.tel   || '';
+  document.getElementById('f-objeto').value        = c.objeto      || '';
+  document.getElementById('f-obs').value           = c.obs         || '';
+  document.getElementById('f-ret-iss').value       = c.retencoes?.iss  || 0;
+  document.getElementById('f-ret-inss').value      = c.retencoes?.inss || 0;
+  document.getElementById('f-ret-irrf').value      = c.retencoes?.irrf || 0;
+  document.getElementById('f-ret-pcc').value       = c.retencoes?.pcc  || 0;
+  document.getElementById('f-ret-icms').value      = c.retencoes?.icms || 0;
+  _arquivos = (c.documentos || []).map(d => ({ name: d.nome, size: d.size, type: d.tipo, _existente: true }));
+  _renderArquivos();
+  _atualizarPreview();
+}
+
 // ── Salvar ────────────────────────────────────────
 async function _salvar() {
   esconderMsg('msg-feedback');
@@ -272,11 +366,24 @@ async function _salvar() {
 
   _setLoading(true);
   try {
-    const sig = document.getElementById('f-cc-codigo').value.trim().toUpperCase();
-    const contrato = {
+    const sig     = document.getElementById('f-cc-codigo').value.trim().toUpperCase();
+    const ccCodigo = 'CC-CLI-' + sig;
+
+    // Validação CC duplicado (apenas ao criar)
+    if (!_modoEdicao) {
+      const existente = await buscarContratoPorCC(ccCodigo);
+      if (existente) {
+        mostrarMsg('msg-feedback', 'erro',
+          `O código CC "${ccCodigo}" já está em uso pelo contrato ${existente.numContrato} — ${existente.cliente}. Escolha uma sigla diferente.`);
+        _setLoading(false);
+        return;
+      }
+    }
+
+    const dados = {
       cliente:      document.getElementById('f-cliente').value.trim(),
       numContrato:  document.getElementById('f-num-contrato').value.trim(),
-      ccCodigo:     'CC-CLI-' + sig,
+      ccCodigo,
       valorTotal:   parseMoeda(document.getElementById('f-valor-total').value),
       adiantamento: parseMoeda(document.getElementById('f-adiantamento').value),
       inicio:       document.getElementById('f-inicio').value,
@@ -290,26 +397,35 @@ async function _salvar() {
         email: document.getElementById('f-contato-email').value.trim(),
         tel:   document.getElementById('f-contato-tel').value.trim(),
       },
-      objeto:        document.getElementById('f-objeto').value.trim(),
-      obs:           document.getElementById('f-obs').value.trim(),
+      objeto:   document.getElementById('f-objeto').value.trim(),
+      obs:      document.getElementById('f-obs').value.trim(),
       retencoes: {
-        iss:  parseFloat(document.getElementById('f-ret-iss').value)  || 0,
-        inss: parseFloat(document.getElementById('f-ret-inss').value) || 0,
-        irrf: parseFloat(document.getElementById('f-ret-irrf').value) || 0,
-        pcc:  parseFloat(document.getElementById('f-ret-pcc').value)  || 0,
+        iss:       parseFloat(document.getElementById('f-ret-iss').value)   || 0,
+        issPercMO: parseFloat(document.getElementById('f-mo-iss').value)    || 100,
+        inss:      parseFloat(document.getElementById('f-ret-inss').value)  || 0,
+        inssPercMO: parseFloat(document.getElementById('f-mo-inss').value)  || 100,
+        irrf:      parseFloat(document.getElementById('f-ret-irrf').value)  || 0,
+        pcc:       parseFloat(document.getElementById('f-ret-pcc').value)   || 0,
+        icms:      parseFloat(document.getElementById('f-ret-icms').value)  || 0,
       },
-      documentos:     _arquivos.map(f => ({ nome: f.name, size: f.size, tipo: f.type })),
-      valorExecutado: 0,
-      valorFaturado:  0,
-      valorRecebido:  0,
-      custosDiretos:  0,
-      cadastradoPor:  _perfil?.nome || 'Sistema',
+      documentos:  _arquivos.map(f => ({ nome: f.name, size: f.size, tipo: f.type })),
+      cadastradoPor: _perfil?.nome || 'Sistema',
     };
 
-    const id = await criarContrato(contrato);
-    mostrarMsg('msg-feedback', 'sucesso',
-      `Contrato ${contrato.numContrato} — ${contrato.cliente} cadastrado com sucesso! CC: ${contrato.ccCodigo}`);
-    _limpar();
+    if (_modoEdicao) {
+      await atualizarContrato(_contratoId, dados);
+      mostrarMsg('msg-feedback', 'sucesso',
+        `Contrato ${dados.numContrato} — ${dados.cliente} atualizado com sucesso!`);
+    } else {
+      dados.valorExecutado = 0;
+      dados.valorFaturado  = 0;
+      dados.valorRecebido  = 0;
+      dados.custosDiretos  = 0;
+      await criarContrato(dados);
+      mostrarMsg('msg-feedback', 'sucesso',
+        `Contrato ${dados.numContrato} — ${dados.cliente} cadastrado com sucesso! CC: ${dados.ccCodigo}`);
+      _limpar();
+    }
   } catch (err) {
     mostrarMsg('msg-feedback', 'erro', 'Erro ao salvar: ' + err.message);
   } finally {
@@ -348,7 +464,9 @@ function _validar() {
 function _setLoading(on) {
   document.getElementById('btn-salvar').disabled = on;
   document.getElementById('spinner').style.display = on ? 'block' : 'none';
-  document.getElementById('btn-txt').textContent = on ? 'Salvando...' : '✓ Salvar Contrato';
+  if (!on && !_modoEdicao) document.getElementById('btn-txt').textContent = '✓ Salvar Contrato';
+  if (!on && _modoEdicao)  document.getElementById('btn-txt').textContent = '✓ Salvar Alterações';
+  if (on) document.getElementById('btn-txt').textContent = 'Salvando...';
 }
 
 function _limpar() {
@@ -357,10 +475,12 @@ function _limpar() {
    'f-contato-tel', 'f-objeto', 'f-obs'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  document.getElementById('f-prazo').value  = '60';
-  document.getElementById('f-status').value = 'ativo';
-  document.getElementById('f-tipo').value   = 'municipal';
-  ['f-ret-iss', 'f-ret-inss', 'f-ret-irrf', 'f-ret-pcc'].forEach(id => {
+  document.getElementById('f-prazo').value     = '60';
+  document.getElementById('f-status').value    = 'ativo';
+  document.getElementById('f-tipo').value      = 'municipal';
+  document.getElementById('f-mo-iss').value    = 100;
+  document.getElementById('f-mo-inss').value   = 100;
+  ['f-ret-iss', 'f-ret-inss', 'f-ret-irrf', 'f-ret-pcc', 'f-ret-icms'].forEach(id => {
     document.getElementById(id).value = 0;
   });
   document.getElementById('cod-preview').style.display = 'none';

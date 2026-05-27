@@ -3,23 +3,31 @@
 // ══════════════════════════════════════════════
 
 const ROTAS = {
-  login:            () => import('./pages/login.js'),
-  contratos:        () => import('./pages/contratos.js'),
-  'lancar-contrato': () => import('./pages/lancar-contrato.js'),
-  'plano-contas':   () => import('./pages/plano-contas.js'),
-  'lancar-despesa': () => import('./pages/lancar-despesa.js'),
-  'lancar-receita': () => import('./pages/lancar-receita.js'),
-  'base-dados':     () => import('./pages/base-dados.js'),
+  login:              () => import('./pages/login.js'),
+  contratos:          () => import('./pages/contratos.js'),
+  'lancar-contrato':  () => import('./pages/lancar-contrato.js'),
+  'plano-contas':     () => import('./pages/plano-contas.js'),
+  'lancar-despesa':   () => import('./pages/lancar-despesa.js'),
+  'lancar-receita':   () => import('./pages/lancar-receita.js'),
+  'base-dados':       () => import('./pages/base-dados.js'),
+  'kpis':             () => import('./pages/kpis.js'),
+  'fluxo-caixa':      () => import('./pages/fluxo-caixa.js'),
+  'dre-comparativo':  () => import('./pages/dre-comparativo.js'),
+  'dre-por-cc':       () => import('./pages/dre-por-cc.js'),
 };
 
 const PERMISSOES = {
-  login:            null,
-  contratos:        'financeiro',
+  login:             null,
+  contratos:         'financeiro',
   'lancar-contrato': 'financeiro',
-  'plano-contas':   'operacao',
-  'lancar-despesa': 'operacao',
-  'lancar-receita': 'financeiro',
-  'base-dados':     'financeiro',
+  'plano-contas':    'operacao',
+  'lancar-despesa':  'operacao',
+  'lancar-receita':  'financeiro',
+  'base-dados':      'financeiro',
+  'kpis':            'financeiro',
+  'fluxo-caixa':     'financeiro',
+  'dre-comparativo': 'financeiro',
+  'dre-por-cc':      'financeiro',
 };
 
 let paginaAtual = null;
