@@ -75,7 +75,7 @@ function _html() {
     </div>
 
     <div class="rodape-esq">
-      <span>Forte Sinalização © 2026</span>
+      <span>Forte Sinalização ©</span>
       <span>Confidencial</span>
     </div>
   </section>
