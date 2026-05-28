@@ -30,7 +30,7 @@ function _html() {
       <p class="logo-sub">Gestão · Contratos · KPIs · Fluxo de Caixa</p>
     </div>
 
-    <p class="niveis-label">Níveis de acesso ao sistema</p>
+    <p class="niveis-label">Perfis de Acesso</p>
 
     <div class="nivel-card adm">
       <div class="nivel-info">
