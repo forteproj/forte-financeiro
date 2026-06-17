@@ -10,7 +10,7 @@ const ROTAS = {
   'lancar-despesa':   () => import('./pages/lancar-despesa.js'),
   'lancar-receita':   () => import('./pages/lancar-receita.js'),
   'base-dados':       () => import('./pages/base-dados.js'),
-  'kpis':             () => import('./pages/kpis.js?v=3'),
+  'kpis':             () => import('./pages/kpis.js'),
   'fluxo-caixa':      () => import('./pages/fluxo-caixa.js'),
   'dre-comparativo':  () => import('./pages/dre-comparativo.js'),
   'dre-por-cc':       () => import('./pages/dre-por-cc.js'),
