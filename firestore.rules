@@ -58,5 +58,11 @@ service cloud.firestore {
       allow read:  if isAtivo();
       allow write: if isAtivo();
     }
+
+    // ── KPI Manuais ──────────────────────────
+    match /kpiManuais/{id} {
+      allow read:  if isFinanceiro();
+      allow write: if isFinanceiro();
+    }
   }
 }
