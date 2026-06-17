@@ -180,18 +180,17 @@ function _cfgCell(def, tipo) {
   const clr  = isM ? '#2D7D46' : '#C0392B';
   const bg   = isM ? '#E6F4EB' : '#FDECEA';
   return `<td style="text-align:center;padding:3px 5px;vertical-align:middle">
-    <div style="display:flex;align-items:center;justify-content:center;gap:2px;
-                font-size:11px;font-weight:700;color:${clr}">
-      <span>${pre}</span>
+    <div style="display:inline-flex;align-items:center;gap:1px;font-size:11px;font-weight:700;color:${clr}">
+      <span style="display:inline-block;width:14px;text-align:right">${pre}</span>
       <input type="number" class="kpi-cfg"
         data-key="${def.key}" data-tipo="${tipo}" value="${val}"
         title="Editar valor"
-        style="width:40px;text-align:center;padding:3px 4px;
+        style="width:42px;text-align:center;padding:3px 4px;
                border:1px solid ${clr};border-radius:4px;
                background:${bg};color:${clr};font-weight:700;font-size:11px;
                font-family:var(--ds-font);outline:none;
                appearance:textfield;-moz-appearance:textfield;-webkit-appearance:textfield;" />
-      <span>${suf}</span>
+      <span style="display:inline-block;width:12px;text-align:left">${suf}</span>
     </div>
   </td>`;
 }
