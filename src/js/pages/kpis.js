@@ -1,5 +1,5 @@
 import { carregarLancamentos, carregarKpiManuais, salvarKpiManual,
-         carregarKpiConfig, salvarKpiConfig } from '../db.js';
+         carregarKpiConfig, salvarKpiConfig, carregarContratos } from '../db.js';
 import { fmtMfull } from '../utils.js';
 
 const MESES  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
@@ -8,13 +8,12 @@ const M3     = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov
 const FOLHA_CATS = ['3.2.900','3.2.901','3.2.902','3.2.903'];
 
 const INPUT_DEFS = [
-  { key:'saldoCaixa',          label:'Saldo de Caixa fim do mês (R$)',    tipo:'moeda'  },
-  { key:'pmr',                 label:'PMR — dias (contas a receber)',       tipo:'numero' },
-  { key:'pmp',                 label:'PMP — dias (contas a pagar)',         tipo:'numero' },
-  { key:'faturasVencidas',     label:'Faturas Vencidas (R$)',              tipo:'moeda'  },
-  { key:'backlog',             label:'Backlog — carteira a executar (R$)', tipo:'moeda'  },
-  { key:'receitaMaiorCliente', label:'Receita do Maior Cliente (R$)',       tipo:'moeda'  },
-  { key:'forecastReceita',     label:'Forecast de Receita do mês (R$)',    tipo:'moeda'  },
+  { key:'saldoCaixa',          label:'Saldo de Caixa fim do mês (R$)',  tipo:'moeda'  },
+  { key:'pmr',                 label:'PMR — dias (contas a receber)',     tipo:'numero' },
+  { key:'pmp',                 label:'PMP — dias (contas a pagar)',       tipo:'numero' },
+  { key:'faturasVencidas',     label:'Faturas Vencidas (R$)',            tipo:'moeda'  },
+  { key:'receitaMaiorCliente', label:'Receita do Maior Cliente (R$)',     tipo:'moeda'  },
+  { key:'forecastReceita',     label:'Forecast de Receita do mês (R$)',  tipo:'moeda'  },
 ];
 
 // dir:'high' = maior é melhor | dir:'low' = menor é melhor | dir:'range' = abs(val) vs meta
@@ -35,7 +34,8 @@ const KPI_DEFS = [
 
 let _lancamentos = [];
 let _manuais     = {};
-let _config      = {}; // overrides para meta/alerta persistidos no Firestore
+let _config      = {};
+let _contratos   = [];
 let _ano         = new Date().getFullYear();
 let _saveTimers  = {};
 let _cfgTimer    = null;
@@ -88,10 +88,11 @@ async function _carregar() {
   document.getElementById('kpi-body').innerHTML =
     '<div style="padding:40px;text-align:center;color:var(--ds-tx3);font-size:12px;font-weight:600">Carregando...</div>';
   try {
-    [_lancamentos, _manuais, _config] = await Promise.all([
+    [_lancamentos, _manuais, _config, _contratos] = await Promise.all([
       carregarLancamentos(_ano),
       carregarKpiManuais(_ano),
       carregarKpiConfig(),
+      carregarContratos(),
     ]);
     _render();
   } catch (err) {
@@ -118,8 +119,46 @@ function _dre(lancs) {
   return { recBruta, cusDir, folha, adm, retencoes, capex, material, financeiro, resultado };
 }
 
+// ── Backlog calculado por mês (saldo dos contratos ativos no fim do mês) ─
+function _backlogMes(contratos, lancsAno, ano) {
+  const hoje      = new Date();
+  const mesAtual  = (ano === hoje.getFullYear()) ? hoje.getMonth() : 11;
+  const ativos    = contratos.filter(c => c.status === 'ativo' && (c.valorTotal || 0) > 0);
+
+  // Receitas do ano agrupadas por numContrato e índice do mês
+  const recMes = {}; // { numContrato: { mesIdx: valor } }
+  lancsAno.filter(l => l.tipo === 'Receita' && l.contrato).forEach(l => {
+    const mi = MESES.indexOf(l.mes);
+    if (mi < 0) return;
+    if (!recMes[l.contrato]) recMes[l.contrato] = {};
+    recMes[l.contrato][mi] = (recMes[l.contrato][mi] || 0) + (l.valor || 0);
+  });
+
+  return MESES.map((_, mi) => {
+    return ativos.reduce((total, c) => {
+      // Ignora contratos que ainda não iniciaram neste mês
+      if (c.inicio) {
+        const iniDate = new Date(c.inicio + 'T00:00:00');
+        const fimMes  = new Date(ano, mi + 1, 0);
+        if (iniDate > fimMes) return total;
+      }
+      const saldoAtual = Math.max(0, (c.valorTotal || 0) - (c.valorFaturado || 0));
+      if (mi >= mesAtual) {
+        // Mês atual ou futuro: usa saldo corrente
+        return total + saldoAtual;
+      } else {
+        // Mês passado: acrescenta receitas que ainda não tinham sido faturadas
+        const recApos = Object.entries(recMes[c.numContrato] || {})
+          .filter(([idx]) => +idx > mi)
+          .reduce((s, [, v]) => s + v, 0);
+        return total + Math.max(0, saldoAtual + recApos);
+      }
+    }, 0);
+  });
+}
+
 // ── Cálculo de cada KPI ───────────────────────────────────────────────────
-function _calc(def, dre, man, recMedia) {
+function _calc(def, dre, man, recMedia, backlog) {
   const m   = man || {};
   const has = v => v != null && v !== '' && Number(v) > 0;
   switch (def.key) {
@@ -132,7 +171,7 @@ function _calc(def, dre, man, recMedia) {
     case 'inadimplencia':    return (has(m.faturasVencidas) && dre.recBruta > 0) ? m.faturasVencidas / dre.recBruta * 100 : null;
     case 'custoFixo':        return dre.recBruta > 0 ? dre.adm / dre.recBruta * 100 : null;
     case 'custoMaterial':    return dre.recBruta > 0 ? dre.material / dre.recBruta * 100 : null;
-    case 'coberturaBacklog': return (has(m.backlog) && recMedia > 0) ? m.backlog / recMedia : null;
+    case 'coberturaBacklog': return (backlog > 0 && recMedia > 0) ? backlog / recMedia : null;
     case 'concentracao':     return (has(m.receitaMaiorCliente) && dre.recBruta > 0) ? m.receitaMaiorCliente / dre.recBruta * 100 : null;
     case 'desvioForecast':   return (has(m.forecastReceita) && dre.recBruta > 0) ? (dre.recBruta - m.forecastReceita) / m.forecastReceita * 100 : null;
     default: return null;
@@ -197,20 +236,21 @@ function _cfgCell(def, tipo) {
 
 // ── Render principal ──────────────────────────────────────────────────────
 function _render() {
-  const dreMes  = MESES.map(m => _dre(_lancamentos.filter(l => l.mes === m)));
-  const comRec  = dreMes.filter(d => d.recBruta > 0);
+  const dreMes   = MESES.map(m => _dre(_lancamentos.filter(l => l.mes === m)));
+  const comRec   = dreMes.filter(d => d.recBruta > 0);
   const recMedia = comRec.length > 0 ? comRec.reduce((s,d) => s + d.recBruta, 0) / comRec.length : 0;
-  const manMes  = MESES.map((_, i) => _manuais[`${_ano}-${String(i+1).padStart(2,'0')}`] || {});
+  const manMes   = MESES.map((_, i) => _manuais[`${_ano}-${String(i+1).padStart(2,'0')}`] || {});
+  const backlogMes = _backlogMes(_contratos, _lancamentos, _ano);
 
   document.getElementById('kpi-body').innerHTML =
-    _inputsHtml(manMes) + _kpisHtml(dreMes, manMes, recMedia);
+    _inputsHtml(manMes, backlogMes) + _kpisHtml(dreMes, manMes, recMedia, backlogMes);
 
-  _bindInputs(dreMes, manMes, recMedia);
-  _bindCfgInputs(dreMes, manMes, recMedia);
+  _bindInputs(dreMes, manMes, recMedia, backlogMes);
+  _bindCfgInputs(dreMes, manMes, recMedia, backlogMes);
 }
 
 // ── HTML: inputs manuais ──────────────────────────────────────────────────
-function _inputsHtml(manMes) {
+function _inputsHtml(manMes, backlogMes) {
   const ths = M3.map(m =>
     `<th style="min-width:108px;text-align:right;padding:5px 6px">${m}</th>`
   ).join('');
@@ -254,14 +294,26 @@ function _inputsHtml(manMes) {
         ${ths}
         <th style="min-width:110px;text-align:right;background:var(--ds-bg2);padding:5px 10px">Média</th>
       </tr></thead>
-      <tbody>${rows}</tbody>
+      <tbody>
+        ${rows}
+        <tr style="background:var(--ds-bg2)">
+          <td style="font-size:11px;padding:5px 10px;font-weight:600;color:var(--ds-tx2);white-space:nowrap">
+            Backlog — carteira a executar (R$)
+            <span style="font-size:9px;font-weight:400;color:var(--ds-tx3);margin-left:6px">calculado automaticamente</span>
+          </td>
+          ${backlogMes.map(v => `<td style="text-align:right;font-size:11px;font-weight:600;padding:5px 6px;color:var(--ds-blu)">${v > 0 ? fmtMfull(v) : '—'}</td>`).join('')}
+          <td style="text-align:right;font-size:11px;font-weight:700;padding:5px 10px;background:var(--ds-bg3)">
+            ${(()=>{ const s=backlogMes.filter(v=>v>0); return s.length ? fmtMfull(s.reduce((a,b)=>a+b,0)/s.length) : '—'; })()}
+          </td>
+        </tr>
+      </tbody>
     </table>
   </div></div>
 </div>`;
 }
 
 // ── HTML: KPIs calculados ─────────────────────────────────────────────────
-function _kpisHtml(dreMes, manMes, recMedia) {
+function _kpisHtml(dreMes, manMes, recMedia, backlogMes) {
   const ths = M3.map(m =>
     `<th style="min-width:90px;text-align:right;padding:5px 6px">${m}</th>`
   ).join('');
@@ -283,15 +335,15 @@ function _kpisHtml(dreMes, manMes, recMedia) {
         ${ths}
         <th style="min-width:100px;text-align:right;background:var(--ds-bg2);padding:5px 10px">Média</th>
       </tr></thead>
-      <tbody id="kpi-tbody">${_kpiRows(dreMes, manMes, recMedia)}</tbody>
+      <tbody id="kpi-tbody">${_kpiRows(dreMes, manMes, recMedia, backlogMes)}</tbody>
     </table>
   </div></div>
 </div>`;
 }
 
-function _kpiRows(dreMes, manMes, recMedia) {
+function _kpiRows(dreMes, manMes, recMedia, backlogMes) {
   return KPI_DEFS.map(def => {
-    const vals  = dreMes.map((dre, i) => _calc(def, dre, manMes[i], recMedia));
+    const vals  = dreMes.map((dre, i) => _calc(def, dre, manMes[i], recMedia, backlogMes[i]));
     const cells = vals.map(v =>
       `<td style="text-align:right;padding:4px 6px">${_badge(def, v)}</td>`
     ).join('');
@@ -309,17 +361,17 @@ function _kpiRows(dreMes, manMes, recMedia) {
 }
 
 // ── Bind: inputs manuais ──────────────────────────────────────────────────
-function _bindInputs(dreMes, manMes, recMedia) {
+function _bindInputs(dreMes, manMes, recMedia, backlogMes) {
   document.querySelectorAll('.kpi-inp').forEach(inp => {
     inp.addEventListener('change', () => {
       const idx = +inp.dataset.mes;
       clearTimeout(_saveTimers[idx]);
-      _saveTimers[idx] = setTimeout(() => _salvarManual(idx, dreMes, manMes, recMedia), 900);
+      _saveTimers[idx] = setTimeout(() => _salvarManual(idx, dreMes, manMes, recMedia, backlogMes), 900);
     });
   });
 }
 
-async function _salvarManual(mesIdx, dreMes, manMes, recMedia) {
+async function _salvarManual(mesIdx, dreMes, manMes, recMedia, backlogMes) {
   const statusEl = document.getElementById('kpi-status');
   const docId    = `${_ano}-${String(mesIdx+1).padStart(2,'0')}`;
   const dados    = { ano: _ano, mes: MESES[mesIdx] };
@@ -336,7 +388,7 @@ async function _salvarManual(mesIdx, dreMes, manMes, recMedia) {
     _manuais[docId] = { id: docId, ...dados };
     manMes[mesIdx]  = dados;
     const tbody = document.getElementById('kpi-tbody');
-    if (tbody) { tbody.innerHTML = _kpiRows(dreMes, manMes, recMedia); _bindCfgInputs(dreMes, manMes, recMedia); }
+    if (tbody) { tbody.innerHTML = _kpiRows(dreMes, manMes, recMedia, backlogMes); _bindCfgInputs(dreMes, manMes, recMedia, backlogMes); }
     if (statusEl) { statusEl.textContent = `✓ ${MESES[mesIdx]} salvo`; setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000); }
   } catch (err) {
     if (statusEl) statusEl.textContent = '✕ Erro ao salvar';
@@ -344,7 +396,7 @@ async function _salvarManual(mesIdx, dreMes, manMes, recMedia) {
 }
 
 // ── Bind: células de meta/alerta editáveis ────────────────────────────────
-function _bindCfgInputs(dreMes, manMes, recMedia) {
+function _bindCfgInputs(dreMes, manMes, recMedia, backlogMes) {
   document.querySelectorAll('.kpi-cfg').forEach(inp => {
     inp.addEventListener('change', () => {
       const key  = inp.dataset.key;
@@ -353,7 +405,7 @@ function _bindCfgInputs(dreMes, manMes, recMedia) {
       _config[key][tipo] = Number(inp.value);
 
       const tbody = document.getElementById('kpi-tbody');
-      if (tbody) { tbody.innerHTML = _kpiRows(dreMes, manMes, recMedia); _bindCfgInputs(dreMes, manMes, recMedia); }
+      if (tbody) { tbody.innerHTML = _kpiRows(dreMes, manMes, recMedia, backlogMes); _bindCfgInputs(dreMes, manMes, recMedia, backlogMes); }
 
       clearTimeout(_cfgTimer);
       _cfgTimer = setTimeout(async () => {
