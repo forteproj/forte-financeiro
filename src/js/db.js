@@ -170,6 +170,18 @@ export async function salvarKpiManual(docId, dados) {
 }
 
 // ════════════════════════════════════════════
+//  KPI CONFIG (meta / alerta por indicador)
+// ════════════════════════════════════════════
+export async function carregarKpiConfig() {
+  const snap = await getDoc(doc(db, 'kpiConfig', 'thresholds'));
+  return snap.exists() ? snap.data() : {};
+}
+
+export async function salvarKpiConfig(dados) {
+  await setDoc(doc(db, 'kpiConfig', 'thresholds'), dados, { merge: true });
+}
+
+// ════════════════════════════════════════════
 //  USUÁRIOS (administração)
 // ════════════════════════════════════════════
 export async function carregarUsuarios() {

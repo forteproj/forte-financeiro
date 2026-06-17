@@ -82,10 +82,12 @@ escutarAuth(async fbUser => {
   }
 
   // Remove loading screen
-  setTimeout(() => {
-    loading.classList.add('oculto');
-    setTimeout(() => loading.remove(), 350);
-  }, 200);
+  if (loading) {
+    setTimeout(() => {
+      loading.classList.add('oculto');
+      setTimeout(() => loading.remove(), 350);
+    }, 200);
+  }
 });
 
 // ── Helpers ────────────────────────────────────

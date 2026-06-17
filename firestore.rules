@@ -64,5 +64,11 @@ service cloud.firestore {
       allow read:  if isFinanceiro();
       allow write: if isFinanceiro();
     }
+
+    // ── KPI Config (meta/alerta) ─────────────
+    match /kpiConfig/{id} {
+      allow read:  if isFinanceiro();
+      allow write: if isFinanceiro();
+    }
   }
 }
