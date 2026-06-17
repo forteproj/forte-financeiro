@@ -155,6 +155,21 @@ export async function buscarRetencoesDaReceita(nrDoc) {
 }
 
 // ════════════════════════════════════════════
+//  KPI MANUAIS
+// ════════════════════════════════════════════
+export async function carregarKpiManuais(ano) {
+  const q = query(collection(db, 'kpiManuais'), where('ano', '==', ano));
+  const snap = await getDocs(q);
+  const result = {};
+  snap.docs.forEach(d => { result[d.id] = { id: d.id, ...d.data() }; });
+  return result;
+}
+
+export async function salvarKpiManual(docId, dados) {
+  await setDoc(doc(db, 'kpiManuais', docId), dados);
+}
+
+// ════════════════════════════════════════════
 //  USUÁRIOS (administração)
 // ════════════════════════════════════════════
 export async function carregarUsuarios() {
