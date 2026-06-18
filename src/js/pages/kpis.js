@@ -40,6 +40,13 @@ let _cfgTimer    = null;
 function _em(def) { return _config[def.key]?.meta   ?? def.meta;   }
 function _ea(def) { return _config[def.key]?.alerta ?? def.alerta; }
 
+// ── Mês efetivo do lançamento (usa data renegociada quando existe) ─────────
+function _efetivaMes(l) {
+  const dataEf = l.dataRenegociacao || l.data;
+  if (!dataEf) return l.mes;
+  return MESES[new Date(dataEf + 'T00:00:00').getMonth()];
+}
+
 // ── Mount / Destroy ───────────────────────────────────────────────────────
 export async function mount(container) {
   _ano = new Date().getFullYear();
@@ -123,7 +130,7 @@ function _backlogMes(contratos, lancsAno, ano) {
 
   const recMes = {};
   lancsAno.filter(l => l.tipo === 'Receita' && l.contrato).forEach(l => {
-    const mi = MESES.indexOf(l.mes);
+    const mi = MESES.indexOf(_efetivaMes(l));
     if (mi < 0) return;
     if (!recMes[l.contrato]) recMes[l.contrato] = {};
     recMes[l.contrato][mi] = (recMes[l.contrato][mi] || 0) + (l.valor || 0);
@@ -148,7 +155,7 @@ function _backlogMes(contratos, lancsAno, ano) {
 // ── Receita do maior contrato por mês ────────────────────────────────────
 function _receitaMaiorMes(lancsAno) {
   return MESES.map(mes => {
-    const receitas = lancsAno.filter(l => l.tipo === 'Receita' && l.mes === mes);
+    const receitas = lancsAno.filter(l => l.tipo === 'Receita' && _efetivaMes(l) === mes);
     if (!receitas.length) return 0;
     const por = {};
     receitas.forEach(l => { const k = l.contrato || '__sem__'; por[k] = (por[k] || 0) + (l.valor || 0); });
@@ -156,13 +163,17 @@ function _receitaMaiorMes(lancsAno) {
   });
 }
 
-// ── PMR / PMP: prazo médio por data de pagamento vs dia 1 do mês ─────────
+// ── PMR / PMP: prazo médio por data efetiva vs dia 1 do mês original ─────
 function _prazoPagMes(tipo, lancsAno) {
-  return MESES.map((mes, mi) => {
-    const lancs = lancsAno.filter(l => l.tipo === tipo && l.mes === mes && l.data);
+  return MESES.map(mes => {
+    const lancs = lancsAno.filter(l => l.tipo === tipo && _efetivaMes(l) === mes && l.data);
     if (!lancs.length) return null;
-    const ref   = new Date(_ano, mi, 1);
-    const terms = lancs.map(l => Math.max(0, Math.round((new Date(l.data + 'T00:00:00') - ref) / 86400000)));
+    const terms = lancs.map(l => {
+      const oriMi  = MESES.indexOf(l.mes);
+      const ref    = new Date(_ano, oriMi >= 0 ? oriMi : MESES.indexOf(mes), 1);
+      const payDate = new Date((l.dataRenegociacao || l.data) + 'T00:00:00');
+      return Math.max(0, Math.round((payDate - ref) / 86400000));
+    });
     return terms.reduce((s, t) => s + t, 0) / terms.length;
   });
 }
@@ -246,7 +257,7 @@ function _cfgCell(def, tipo) {
 
 // ── Render principal ──────────────────────────────────────────────────────
 function _render() {
-  const dreMes  = MESES.map(m => _dre(_lancamentos.filter(l => l.mes === m)));
+  const dreMes  = MESES.map(m => _dre(_lancamentos.filter(l => _efetivaMes(l) === m)));
   const comRec  = dreMes.filter(d => d.recBruta > 0);
   const recMedia = comRec.length > 0 ? comRec.reduce((s,d) => s + d.recBruta, 0) / comRec.length : 0;
   const manMes  = MESES.map((_, i) => _manuais[`${_ano}-${String(i+1).padStart(2,'0')}`] || {});
