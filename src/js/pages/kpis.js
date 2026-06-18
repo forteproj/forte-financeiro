@@ -341,7 +341,7 @@ function _autoRow(label, vals, fmtFn) {
 // ── HTML: inputs manuais ──────────────────────────────────────────────────
 function _inputsHtml(manMes, autoMes, backlogArr, recMaiorArr, pmrArr, pmpArr, saldoArr, fatVencArr) {
   const ths = M3.map(m =>
-    `<th style="min-width:108px;text-align:right;padding:5px 6px">${m}</th>`
+    `<th style="min-width:140px;text-align:right;padding:5px 6px">${m}</th>`
   ).join('');
 
   const rows = INPUT_DEFS.map(def => {
@@ -382,12 +382,12 @@ function _inputsHtml(manMes, autoMes, backlogArr, recMaiorArr, pmrArr, pmpArr, s
     <span style="font-size:11px;color:var(--ds-tx3)">— preencher todo dia 05 (células amarelas)</span>
     <span id="kpi-status" style="font-size:11px;color:var(--ds-grn);margin-left:auto;font-weight:600"></span>
   </div>
-  <div class="tbl-wrap"><div class="tbl-scroll" style="min-width:1100px">
+  <div class="tbl-wrap"><div class="tbl-scroll" style="min-width:1400px">
     <table>
       <thead><tr>
         <th style="min-width:260px;text-align:left;padding:5px 10px">Campo</th>
         ${ths}
-        <th style="min-width:110px;text-align:right;background:var(--ds-bg2);padding:5px 10px">Média</th>
+        <th style="min-width:140px;text-align:right;background:var(--ds-bg2);padding:5px 10px">Média</th>
       </tr></thead>
       <tbody>
         ${rows}
