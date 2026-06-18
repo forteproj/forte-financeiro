@@ -384,6 +384,15 @@ function _preencherFornecedores() {
 function _bindEventos() {
   document.getElementById('f-categoria').addEventListener('change', _onCategoria);
   document.getElementById('f-cc').addEventListener('change', _onCC);
+
+  // Quando muda a data de pagamento, atualiza dataLancamento se ainda não foi editado manualmente
+  document.getElementById('f-data').addEventListener('change', () => {
+    const elLanc = document.getElementById('f-data-lancamento');
+    if (elLanc && !elLanc.dataset.manual) elLanc.value = document.getElementById('f-data').value;
+  });
+  document.getElementById('f-data-lancamento').addEventListener('change', e => {
+    e.target.dataset.manual = '1';
+  });
   document.getElementById('f-valor').addEventListener('input', e => formatarValorInput(e.target));
   document.getElementById('btn-salvar').addEventListener('click', _salvar);
   document.getElementById('btn-limpar').addEventListener('click', _limpar);
@@ -711,7 +720,7 @@ function _setHoje() {
   const elData = document.getElementById('f-data');
   if (elData) elData.value = hoje;
   const elLanc = document.getElementById('f-data-lancamento');
-  if (elLanc) elLanc.value = hoje;
+  if (elLanc) { elLanc.value = hoje; delete elLanc.dataset.manual; }
 }
 
 function _limpar() {

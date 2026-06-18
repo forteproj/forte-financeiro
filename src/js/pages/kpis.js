@@ -206,7 +206,12 @@ function _faturasVencidasMes(lancsAno) {
 // Prazo sempre medido de dataLancamento até a data de vencimento efetiva.
 function _prazoPagMes(tipo, lancsAno) {
   return MESES.map(mes => {
-    const lancs = lancsAno.filter(l => l.tipo === tipo && _efetivaMes(l) === mes && l.data);
+    const lancs = lancsAno.filter(l =>
+      l.tipo === tipo &&
+      _efetivaMes(l) === mes &&
+      l.data &&
+      l.formaPgto !== 'Retenção'   // retenções fiscais não são prazo de pagamento a fornecedor
+    );
     if (!lancs.length) return null;
 
     const _ref = l => l.dataLancamento
