@@ -9,7 +9,7 @@ export { increment };
 
 // ── Backup Google Sheets ─────────────────────────────────────────────────
 // Após criar o Apps Script, cole a URL do Web App aqui:
-const SHEETS_WEBHOOK_URL = '';
+const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby51qZGqOh8T1TSJomo74oZg52OLWeREiMH_m5-satdwWgoX6aM986AjSRO04aIjoRd/exec';
 
 function _syncSheets(lanc) {
   if (!SHEETS_WEBHOOK_URL) return;
