@@ -45,7 +45,7 @@ export function formatarValorInput(inp) {
 export function mesNome(d) {
   return ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
           'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][
-    new Date(d).getMonth()
+    new Date(d + 'T12:00:00').getMonth()
   ];
 }
 
