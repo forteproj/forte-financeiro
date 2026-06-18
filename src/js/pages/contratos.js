@@ -218,7 +218,7 @@ function _bindModal() {
 // ── KPIs ─────────────────────────────────────────
 function _renderKPIs() {
   const ativos = _contratos.filter(c => c.status === 'ativo');
-  const carteira  = _contratos.reduce((s, c) => s + c.valorTotal, 0);
+  const carteira  = _contratos.reduce((s, c) => s + _valorContrato(c), 0);
   const executado = _contratos.reduce((s, c) => s + (c.valorExecutado || 0), 0);
   const saldo     = carteira - executado;
   const recebido  = _contratos.reduce((s, c) => s + (c.valorRecebido || 0), 0);
@@ -251,8 +251,8 @@ function _renderKPIs() {
 // ── Banner ────────────────────────────────────────
 function _renderBanner() {
   const alertas = _contratos
-    .filter(c => c.status === 'ativo' && c.valorTotal > 0)
-    .map(c => ({ ...c, pct: (c.valorExecutado || 0) / c.valorTotal * 100, saldo: c.valorTotal - (c.valorExecutado || 0) }))
+    .filter(c => c.status === 'ativo' && _valorContrato(c) > 0)
+    .map(c => ({ ...c, pct: (c.valorExecutado || 0) / _valorContrato(c) * 100, saldo: _valorContrato(c) - (c.valorExecutado || 0) }))
     .filter(c => c.pct >= 75)
     .sort((a, b) => b.pct - a.pct);
 
@@ -291,7 +291,7 @@ function _renderTabela() {
   lista.sort((a, b) => {
     let va = a[_ordenacao.campo] ?? '';
     let vb = b[_ordenacao.campo] ?? '';
-    if (_ordenacao.campo === 'saldo') { va = a.valorTotal - (a.valorExecutado || 0); vb = b.valorTotal - (b.valorExecutado || 0); }
+    if (_ordenacao.campo === 'saldo') { va = _valorContrato(a) - (a.valorExecutado || 0); vb = _valorContrato(b) - (b.valorExecutado || 0); }
     if (_ordenacao.campo === 'margem') {
       va = a.valorExecutado > 0 ? (a.valorExecutado - (a.custosDiretos || 0)) / a.valorExecutado : 0;
       vb = b.valorExecutado > 0 ? (b.valorExecutado - (b.custosDiretos || 0)) / b.valorExecutado : 0;
@@ -314,8 +314,8 @@ function _renderTabela() {
 
   tbody.innerHTML = lista.map(c => {
     const sem    = _calcSemaforo(c);
-    const saldo  = c.valorTotal - (c.valorExecutado || 0);
-    const pct    = c.valorTotal > 0 ? (c.valorExecutado || 0) / c.valorTotal * 100 : 0;
+    const saldo  = _valorContrato(c) - (c.valorExecutado || 0);
+    const pct    = _valorContrato(c) > 0 ? (c.valorExecutado || 0) / _valorContrato(c) * 100 : 0;
     const custos = c.custosDiretos || 0;
     const margem = c.valorExecutado > 0 ? (c.valorExecutado - custos) / c.valorExecutado * 100 : null;
     const fillCls = pct < 50 ? 'baixo' : pct < 80 ? 'medio' : 'alto';
@@ -335,7 +335,7 @@ function _renderTabela() {
       <td class="td-cliente">${c.cliente}${avisoIcon}</td>
       <td class="td-num">${c.numContrato}</td>
       <td><span class="td-cc">${c.ccCodigo}</span></td>
-      <td class="td-valor">${fmtM(c.valorTotal)}</td>
+      <td class="td-valor">${fmtM(_valorContrato(c))}</td>
       <td class="td-valor receita">${fmtM(c.valorExecutado || 0)}</td>
       <td class="td-valor">${fmtM(saldo)}</td>
       <td>
@@ -369,7 +369,7 @@ function _calcSemaforo(c) {
   const hoje    = new Date();
   const fim     = new Date(c.fim);
   const diasFim = Math.floor((fim - hoje) / 86400000);
-  const pct     = c.valorTotal > 0 ? (c.valorExecutado || 0) / c.valorTotal * 100 : 0;
+  const pct     = _valorContrato(c) > 0 ? (c.valorExecutado || 0) / _valorContrato(c) * 100 : 0;
   if (c.valorFaturado > 0 && (c.valorRecebido || 0) < c.valorFaturado * 0.5) return 'vermelho';
   if (pct >= 90) return 'vermelho';
   if (pct >= 75) return 'amarelo';
@@ -385,12 +385,12 @@ function _abrirModal(id) {
 
   const custos = c.custosDiretos || 0;
   const margem = c.valorExecutado > 0 ? (c.valorExecutado - custos) / c.valorExecutado * 100 : 0;
-  const pct    = c.valorTotal > 0 ? Math.min((c.valorExecutado || 0) / c.valorTotal * 100, 100) : 0;
-  const saldo  = c.valorTotal - (c.valorExecutado || 0);
+  const pct    = _valorContrato(c) > 0 ? Math.min((c.valorExecutado || 0) / _valorContrato(c) * 100, 100) : 0;
+  const saldo  = _valorContrato(c) - (c.valorExecutado || 0);
 
   document.getElementById('m-titulo').textContent    = c.cliente;
   document.getElementById('m-subtitulo').textContent = c.numContrato + ' · ' + c.ccCodigo;
-  document.getElementById('m-valor-total').textContent = fmtMfull(c.valorTotal);
+  document.getElementById('m-valor-total').textContent = fmtMfull(_valorContrato(c));
   document.getElementById('m-executado').textContent   = fmtMfull(c.valorExecutado || 0);
   document.getElementById('m-faturado').textContent    = fmtMfull(c.valorFaturado || 0);
   document.getElementById('m-recebido').textContent    = fmtMfull(c.valorRecebido || 0);
@@ -569,4 +569,9 @@ async function _excluirContrato() {
 
 function _tipoLabel(t) {
   return { municipal: 'Municipal', estadual: 'Estadual', federal: 'Federal', privado: 'Privado' }[t] || t || '—';
+}
+
+function _valorContrato(c) {
+  const aditTotal = (c.aditivos || []).reduce((s, a) => s + (a.valor || 0), 0);
+  return (c.valorTotal || 0) + aditTotal;
 }
