@@ -216,7 +216,7 @@ function _prazoPagMes(tipo, lancsAno) {
 
     const _ref = l => l.dataLancamento
       ? new Date(l.dataLancamento + 'T00:00:00')
-      : new Date(_ano, MESES.indexOf(_efetivaMes(l)), 1);
+      : new Date((l.dataRenegociacao || l.data) + 'T00:00:00'); // sem dataLancamento: prazo = 0 (à vista)
     const _dias = l => Math.max(0, Math.round(
       (new Date((l.dataRenegociacao || l.data) + 'T00:00:00') - _ref(l)) / 86400000
     ));
