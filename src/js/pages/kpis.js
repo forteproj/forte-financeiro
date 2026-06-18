@@ -8,7 +8,6 @@ const M3     = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov
 const FOLHA_CATS = ['3.2.900','3.2.901','3.2.902','3.2.903'];
 
 const INPUT_DEFS = [
-  { key:'faturasVencidas', label:'Faturas Vencidas (R$)',           tipo:'moeda' },
   { key:'forecastReceita', label:'Forecast de Receita do mês (R$)', tipo:'moeda' },
 ];
 
@@ -163,6 +162,21 @@ function _receitaMaiorMes(lancsAno) {
   });
 }
 
+// ── Faturas vencidas: receitas não confirmadas com data efetiva < hoje ───
+function _faturasVencidasMes(lancsAno) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  return MESES.map(mes =>
+    lancsAno
+      .filter(l => {
+        if (l.tipo !== 'Receita') return false;
+        if (l.confirmadoEm || l.statusPagamento === 'realizado') return false;
+        const dataEf = l.dataRenegociacao || l.data;
+        return dataEf && dataEf < hoje && _efetivaMes(l) === mes;
+      })
+      .reduce((s, l) => s + (l.valor || 0), 0)
+  );
+}
+
 // ── PMR / PMP: prazo médio por data efetiva vs dia 1 do mês original ─────
 function _prazoPagMes(tipo, lancsAno) {
   return MESES.map(mes => {
@@ -189,7 +203,7 @@ function _calc(def, dre, man, recMedia, auto) {
     case 'diasCaixa':        return (auto.saldoCaixa > 0 && dre.adm > 0) ? auto.saldoCaixa / (dre.adm / 30) : null;
     case 'pmrKpi':           return auto.pmr != null ? auto.pmr : null;
     case 'cicloFin':         return (auto.pmr != null && auto.pmp != null) ? auto.pmr - auto.pmp : null;
-    case 'inadimplencia':    return (has(m.faturasVencidas) && dre.recBruta > 0) ? m.faturasVencidas / dre.recBruta * 100 : null;
+    case 'inadimplencia':    return (auto.faturasVencidas > 0 && dre.recBruta > 0) ? auto.faturasVencidas / dre.recBruta * 100 : null;
     case 'custoFixo':        return dre.recBruta > 0 ? dre.adm / dre.recBruta * 100 : null;
     case 'custoMaterial':    return dre.recBruta > 0 ? dre.material / dre.recBruta * 100 : null;
     case 'coberturaBacklog': return (auto.backlog > 0 && recMedia > 0) ? auto.backlog / recMedia : null;
@@ -267,18 +281,20 @@ function _render() {
   const pmrArr       = _prazoPagMes('Receita', _lancamentos);
   const pmpArr       = _prazoPagMes('Gasto',   _lancamentos);
   const saldoArr     = dreMes.reduce((acc, d) => { acc.push((acc.at(-1) ?? 0) + d.resultado); return acc; }, []);
+  const fatVencArr   = _faturasVencidasMes(_lancamentos);
 
   // Objeto auto por mês — passado a _calc e às tabelas
   const autoMes = MESES.map((_, i) => ({
-    backlog:    backlogArr[i],
-    recMaior:   recMaiorArr[i],
-    pmr:        pmrArr[i],
-    pmp:        pmpArr[i],
-    saldoCaixa: saldoArr[i],
+    backlog:          backlogArr[i],
+    recMaior:         recMaiorArr[i],
+    pmr:              pmrArr[i],
+    pmp:              pmpArr[i],
+    saldoCaixa:       saldoArr[i],
+    faturasVencidas:  fatVencArr[i],
   }));
 
   document.getElementById('kpi-body').innerHTML =
-    _inputsHtml(manMes, autoMes, backlogArr, recMaiorArr, pmrArr, pmpArr, saldoArr) +
+    _inputsHtml(manMes, autoMes, backlogArr, recMaiorArr, pmrArr, pmpArr, saldoArr, fatVencArr) +
     _kpisHtml(dreMes, manMes, recMedia, autoMes);
 
   _bindInputs(dreMes, manMes, recMedia, autoMes);
@@ -305,7 +321,7 @@ function _autoRow(label, vals, fmtFn) {
 }
 
 // ── HTML: inputs manuais ──────────────────────────────────────────────────
-function _inputsHtml(manMes, autoMes, backlogArr, recMaiorArr, pmrArr, pmpArr, saldoArr) {
+function _inputsHtml(manMes, autoMes, backlogArr, recMaiorArr, pmrArr, pmpArr, saldoArr, fatVencArr) {
   const ths = M3.map(m =>
     `<th style="min-width:108px;text-align:right;padding:5px 6px">${m}</th>`
   ).join('');
@@ -333,11 +349,12 @@ function _inputsHtml(manMes, autoMes, backlogArr, recMaiorArr, pmrArr, pmpArr, s
     </tr>`;
   }).join('');
 
-  const saldoRow = _autoRow('Saldo de Caixa fim do mês (R$)', saldoArr, v => fmtMfull(v));
-  const pmrRow   = _autoRow('PMR — Prazo Médio Recebimento (dias)', pmrArr,  v => Math.round(v) + ' d');
-  const pmpRow   = _autoRow('PMP — Prazo Médio Pagamento (dias)',   pmpArr,  v => Math.round(v) + ' d');
-  const recRow   = _autoRow('Receita do Maior Cliente (R$)',        recMaiorArr, v => fmtMfull(v));
-  const blgRow   = _autoRow('Backlog — carteira a executar (R$)',   backlogArr,  v => fmtMfull(v));
+  const saldoRow = _autoRow('Saldo de Caixa fim do mês (R$)',         saldoArr,    v => fmtMfull(v));
+  const pmrRow   = _autoRow('PMR — Prazo Médio Recebimento (dias)',   pmrArr,      v => Math.round(v) + ' d');
+  const pmpRow   = _autoRow('PMP — Prazo Médio Pagamento (dias)',     pmpArr,      v => Math.round(v) + ' d');
+  const recRow   = _autoRow('Receita do Maior Cliente (R$)',          recMaiorArr, v => fmtMfull(v));
+  const blgRow   = _autoRow('Backlog — carteira a executar (R$)',     backlogArr,  v => fmtMfull(v));
+  const fatRow   = _autoRow('Faturas Vencidas (R$)',                  fatVencArr,  v => fmtMfull(v));
 
   return `
 <div style="margin-bottom:24px">
@@ -355,6 +372,7 @@ function _inputsHtml(manMes, autoMes, backlogArr, recMaiorArr, pmrArr, pmpArr, s
       </tr></thead>
       <tbody>
         ${rows}
+        ${fatRow}
         ${saldoRow}
         ${pmrRow}
         ${pmpRow}
