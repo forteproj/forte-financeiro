@@ -91,11 +91,17 @@ function _html() {
     <!-- 1. IDENTIFICAÇÃO -->
     <div class="form-section">
       <div class="section-titulo">Identificação</div>
-      <div class="row row-4">
+      <div class="row row-2">
+        <div class="campo">
+          <label>Data de lançamento</label>
+          <input type="date" id="f-data-lancamento">
+        </div>
         <div class="campo">
           <label>Data prevista do recebimento <span style="color:var(--vermelho)">*</span></label>
           <input type="date" id="f-data">
         </div>
+      </div>
+      <div class="row row-3" style="margin-top:12px">
         <div class="campo">
           <label>Nº NFS-e / Documento <span style="color:var(--vermelho)">*</span></label>
           <input type="text" id="f-doc" placeholder="NFS-001, NFS-e nº...">
@@ -402,8 +408,9 @@ async function _salvar() {
   _setLoading(true);
 
   try {
-    const data    = document.getElementById('f-data').value;
-    const d       = new Date(data + 'T12:00:00');
+    const data           = document.getElementById('f-data').value;
+    const dataLancamento = document.getElementById('f-data-lancamento').value || new Date().toISOString().split('T')[0];
+    const d              = new Date(data + 'T12:00:00');
     const bruto   = parseMoeda(document.getElementById('f-valor').value);
     const cc      = document.getElementById('f-cc').value;
     const contrato = document.getElementById('f-contrato').value;
@@ -414,6 +421,7 @@ async function _salvar() {
       await atualizarLancamento(_editId, {
         tipo: 'Receita',
         data, mes: mesNome(data), ano: d.getFullYear(),
+        dataLancamento,
         categoria:     '1.1.001',
         categoriaDesc: '1.1.001 — Receita de Serviços (NFS-e)',
         cc, formaPgto: document.getElementById('f-forma').value,
@@ -480,6 +488,7 @@ async function _salvar() {
     await salvarLancamento({
       tipo:          'Receita',
       data, mes: mesNome(data), ano: d.getFullYear(),
+      dataLancamento,
       categoria:      '1.1.001',
       categoriaDesc:  '1.1.001 — Receita de Serviços (NFS-e)',
       cc, formaPgto: document.getElementById('f-forma').value,
@@ -573,8 +582,11 @@ function _setLoading(on) {
 }
 
 function _setHoje() {
-  const el = document.getElementById('f-data');
-  if (el) el.value = new Date().toISOString().split('T')[0];
+  const hoje = new Date().toISOString().split('T')[0];
+  const elData = document.getElementById('f-data');
+  if (elData) elData.value = hoje;
+  const elLanc = document.getElementById('f-data-lancamento');
+  if (elLanc) elLanc.value = hoje;
 }
 
 function _limpar() {
@@ -605,6 +617,7 @@ async function _carregarParaEdicao() {
     if (!l) { mostrarMsg('msg-feedback', 'erro', 'Lançamento não encontrado.'); return; }
 
     document.getElementById('edit-banner').style.display = 'flex';
+    document.getElementById('f-data-lancamento').value = l.dataLancamento || new Date().toISOString().split('T')[0];
     document.getElementById('f-data').value        = l.data || '';
     document.getElementById('f-doc').value         = l.nrDoc || '';
     document.getElementById('f-forma').value       = l.formaPgto || '';

@@ -200,14 +200,15 @@ function _faturasVencidasMes(lancsAno) {
   );
 }
 
-// ── PMR / PMP: prazo médio por data efetiva vs dia 1 do mês original ─────
+// ── PMR / PMP: prazo médio entre dataLancamento e data de pagamento/recebimento ──
 function _prazoPagMes(tipo, lancsAno) {
   return MESES.map(mes => {
     const lancs = lancsAno.filter(l => l.tipo === tipo && _efetivaMes(l) === mes && l.data);
     if (!lancs.length) return null;
     const terms = lancs.map(l => {
-      const oriMi  = MESES.indexOf(l.mes);
-      const ref    = new Date(_ano, oriMi >= 0 ? oriMi : MESES.indexOf(mes), 1);
+      const ref = l.dataLancamento
+        ? new Date(l.dataLancamento + 'T00:00:00')
+        : new Date(_ano, MESES.indexOf(_efetivaMes(l)), 1); // fallback: dia 1 do mês efetivo
       const payDate = new Date((l.dataRenegociacao || l.data) + 'T00:00:00');
       return Math.max(0, Math.round((payDate - ref) / 86400000));
     });

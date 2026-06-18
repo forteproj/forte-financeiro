@@ -96,7 +96,11 @@ function _html() {
     <!-- 1. IDENTIFICAÇÃO -->
     <div class="form-section">
       <div class="section-titulo">Identificação</div>
-      <div class="row row-3">
+      <div class="row row-4">
+        <div class="campo">
+          <label>Data de lançamento</label>
+          <input type="date" id="f-data-lancamento">
+        </div>
         <div class="campo">
           <label>Data prevista do pagamento <span style="color:var(--vermelho)">*</span></label>
           <input type="date" id="f-data">
@@ -577,6 +581,7 @@ async function _salvar() {
   }
 
   // Captura antes de _limpar
+  const dataLancamento = document.getElementById('f-data-lancamento').value || new Date().toISOString().split('T')[0];
   const selCat    = document.getElementById('f-categoria');
   const catDesc   = selCat.options[selCat.selectedIndex]?.text || '';
   const catId     = document.getElementById('f-categoria').value;
@@ -597,6 +602,7 @@ async function _salvar() {
       const d    = new Date(data + 'T12:00:00');
       await atualizarLancamento(_editId, {
         data, mes: mesNome(data), ano: d.getFullYear(),
+        dataLancamento,
         categoria: catId, categoriaDesc: catDesc,
         cc: ccVal, formaPgto: forma,
         valor, fornecedor, info: infoBase, nrDoc: nrDocBase, contrato,
@@ -636,6 +642,7 @@ async function _salvar() {
         data,
         mes:           mesNome(data),
         ano:           d.getFullYear(),
+        dataLancamento,
         categoria:     catId,
         categoriaDesc: catDesc,
         cc:            ccVal,
@@ -700,8 +707,11 @@ function _setLoading(on) {
 }
 
 function _setHoje() {
-  const el = document.getElementById('f-data');
-  if (el) el.value = new Date().toISOString().split('T')[0];
+  const hoje = new Date().toISOString().split('T')[0];
+  const elData = document.getElementById('f-data');
+  if (elData) elData.value = hoje;
+  const elLanc = document.getElementById('f-data-lancamento');
+  if (elLanc) elLanc.value = hoje;
 }
 
 function _limpar() {
@@ -734,6 +744,7 @@ async function _carregarParaEdicao() {
     if (!l) { mostrarMsg('msg-feedback', 'erro', 'Lançamento não encontrado.'); return; }
 
     document.getElementById('edit-banner').style.display = 'flex';
+    document.getElementById('f-data-lancamento').value = l.dataLancamento || new Date().toISOString().split('T')[0];
     document.getElementById('f-data').value      = l.data || '';
     document.getElementById('f-doc').value       = l.nrDoc || '';
     document.getElementById('f-forma').value     = l.formaPgto || '';
