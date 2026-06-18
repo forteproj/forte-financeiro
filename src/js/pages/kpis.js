@@ -142,6 +142,12 @@ function _backlogMes(contratos, lancsAno, ano) {
 
   return MESES.map((_, mi) =>
     relevantes.reduce((total, c) => {
+      // Contrato ainda não iniciado neste mês
+      if (c.inicio) {
+        const iniDate = new Date(c.inicio + 'T00:00:00');
+        if (iniDate > new Date(ano, mi + 1, 0)) return total;
+      }
+
       // Valor efetivo = valorTotal + aditivos vigentes até este mês
       const aditVal = (c.aditivos || [])
         .filter(a => a.data && anoMesStr(mi) >= a.data)
@@ -154,13 +160,7 @@ function _backlogMes(contratos, lancsAno, ano) {
         const encRef = c.encerradoEm ||
           `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
         if (anoMesStr(mi) > encRef) return total;
-        return total + saldoAtual; // sem recApos — mostra saldo no momento do encerramento
-      }
-
-      // Contrato ainda não iniciado neste mês
-      if (c.inicio) {
-        const iniDate = new Date(c.inicio + 'T00:00:00');
-        if (iniDate > new Date(ano, mi + 1, 0)) return total;
+        return total + saldoAtual;
       }
       if (mi >= mesAtual) return total + saldoAtual;
       const recApos = Object.entries(recMes[c.numContrato] || {})
