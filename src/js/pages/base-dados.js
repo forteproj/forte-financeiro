@@ -582,41 +582,78 @@ function _renderKPIs() {
 async function _confirmarPagamento(id) {
   const l = _lancamentos.find(x => x.id === id);
   if (!l) return;
-  const dados = {
-    statusPagamento: 'realizado',
-    confirmadoPor:   _perfil?.nome || 'Sistema',
-    confirmadoEm:    new Date().toISOString(),
-  };
-  try {
-    await atualizarLancamento(id, dados);
-    Object.assign(l, dados);
 
-    // Retenções retidas na fonte são pagas junto com a receita — confirma automaticamente
-    if (l.tipo === 'Receita' && l.nrDoc) {
-      const retencoes = _lancamentos.filter(
-        x => x.nrDoc === l.nrDoc && x.formaPgto === 'Retenção' && _calcStatus(x) !== 'realizado'
-      );
-      for (const r of retencoes) {
-        await atualizarLancamento(r.id, dados);
-        Object.assign(r, dados);
-      }
-    }
+  const hoje   = new Date().toISOString().split('T')[0];
+  const isRec  = l.tipo === 'Receita';
+  const titulo = isRec ? 'Confirmar recebimento' : 'Confirmar pagamento';
+  const campo  = isRec ? 'Data real do recebimento' : 'Data real do pagamento';
 
-    // Atualiza valorRecebido no contrato quando receita é confirmada
-    if (l.tipo === 'Receita' && l.contrato) {
-      try {
-        const contrato = await buscarContratoPorNum(l.contrato);
-        if (contrato?.id) {
-          await atualizarContrato(contrato.id, { valorRecebido: increment(l.valor || 0) });
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--card);border-radius:10px;padding:28px 24px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,.25)">
+      <div style="font-size:14px;font-weight:700;margin-bottom:6px">${titulo}</div>
+      <div style="font-size:12px;color:var(--mu);margin-bottom:18px">${fmtData(l.data)} · ${fmtMfull(Math.abs(l.valor||0))}</div>
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);display:block;margin-bottom:6px">${campo}</label>
+      <input type="date" id="inp-conf-data" value="${hoje}"
+        style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:7px 10px;
+               font-size:13px;font-family:var(--fonte);background:var(--bg);color:var(--texto);
+               outline:none;margin-bottom:20px;box-sizing:border-box">
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="btn-conf-cancelar"
+          style="border:1px solid var(--bd);background:none;border-radius:6px;padding:7px 16px;font-size:12px;cursor:pointer;color:var(--texto)">
+          Cancelar
+        </button>
+        <button id="btn-conf-ok"
+          style="border:none;background:var(--verde);color:#fff;border-radius:6px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer">
+          Confirmar
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  document.getElementById('btn-conf-cancelar').addEventListener('click', () => overlay.remove());
+  document.getElementById('btn-conf-ok').addEventListener('click', async () => {
+    const dataRecebimento = document.getElementById('inp-conf-data').value || hoje;
+    overlay.remove();
+
+    const dados = {
+      statusPagamento: 'realizado',
+      confirmadoPor:   _perfil?.nome || 'Sistema',
+      confirmadoEm:    new Date().toISOString(),
+      dataRecebimento,
+    };
+    try {
+      await atualizarLancamento(id, dados);
+      Object.assign(l, dados);
+
+      // Retenções retidas na fonte são pagas junto com a receita — confirma automaticamente
+      if (isRec && l.nrDoc) {
+        const retencoes = _lancamentos.filter(
+          x => x.nrDoc === l.nrDoc && x.formaPgto === 'Retenção' && _calcStatus(x) !== 'realizado'
+        );
+        for (const r of retencoes) {
+          await atualizarLancamento(r.id, dados);
+          Object.assign(r, dados);
         }
-      } catch {}
-    }
+      }
 
-    _fecharPainel();
-    _filtrar();
-  } catch (err) {
-    alert('Erro ao confirmar: ' + err.message);
-  }
+      // Atualiza valorRecebido no contrato quando receita é confirmada
+      if (isRec && l.contrato) {
+        try {
+          const contrato = await buscarContratoPorNum(l.contrato);
+          if (contrato?.id) {
+            await atualizarContrato(contrato.id, { valorRecebido: increment(l.valor || 0) });
+          }
+        } catch {}
+      }
+
+      _fecharPainel();
+      _filtrar();
+    } catch (err) {
+      alert('Erro ao confirmar: ' + err.message);
+    }
+  });
 }
 
 // ── Deletar ───────────────────────────────────────

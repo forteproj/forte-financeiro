@@ -204,11 +204,26 @@ function _faturasVencidasMes(lancsAno) {
 // PMP (Gasto):   média ponderada pelo valor — sum(valor × prazo) / sum(valor)
 // PMR (Receita): média simples — sum(prazo) / count
 // Prazo sempre medido de dataLancamento até a data de vencimento efetiva.
+// Data efetiva de pagamento/recebimento: para Receita usa dataRecebimento
+// (confirmado) > dataRenegociacao > data. Para Gasto usa dataRenegociacao > data.
+function _dataEfetivaPag(l) {
+  return l.tipo === 'Receita'
+    ? (l.dataRecebimento || l.dataRenegociacao || l.data)
+    : (l.dataRenegociacao || l.data);
+}
+
+// Mês de bucketing para PMR/PMP considera a data efetiva real
+function _mesPrazoPag(l) {
+  const d = _dataEfetivaPag(l);
+  if (!d) return l.mes;
+  return MESES[new Date(d + 'T00:00:00').getMonth()];
+}
+
 function _prazoPagMes(tipo, lancsAno) {
   return MESES.map(mes => {
     const lancs = lancsAno.filter(l =>
       l.tipo === tipo &&
-      _efetivaMes(l) === mes &&
+      _mesPrazoPag(l) === mes &&
       l.data &&
       l.dataLancamento &&           // sem data de emissão não há como calcular prazo real
       l.formaPgto !== 'Retenção'    // retenções fiscais não são prazo de pagamento a fornecedor
@@ -217,7 +232,7 @@ function _prazoPagMes(tipo, lancsAno) {
 
     const _ref  = l => new Date(l.dataLancamento + 'T00:00:00');
     const _dias = l => Math.max(0, Math.round(
-      (new Date((l.dataRenegociacao || l.data) + 'T00:00:00') - _ref(l)) / 86400000
+      (new Date(_dataEfetivaPag(l) + 'T00:00:00') - _ref(l)) / 86400000
     ));
 
     if (tipo === 'Gasto') {
