@@ -103,6 +103,14 @@ function _html(perfil) {
     <div class="modal-body">
       <div class="progresso-wrap">
         <div class="progresso-titulo">Execução financeira</div>
+        <div class="progresso-linha" id="m-base-linha" style="display:none">
+          <span class="progresso-nome" style="color:var(--mu)">Valor base</span>
+          <span class="progresso-val" id="m-valor-base" style="color:var(--mu)">—</span>
+        </div>
+        <div class="progresso-linha" id="m-adit-linha" style="display:none">
+          <span class="progresso-nome" style="color:var(--mu)">(+) Aditivos</span>
+          <span class="progresso-val" id="m-aditivos-soma" style="color:var(--mu)">—</span>
+        </div>
         <div class="progresso-linha">
           <span class="progresso-nome">Valor total</span>
           <span class="progresso-val" id="m-valor-total">—</span>
@@ -390,7 +398,12 @@ function _abrirModal(id) {
 
   document.getElementById('m-titulo').textContent    = c.cliente;
   document.getElementById('m-subtitulo').textContent = c.numContrato + ' · ' + c.ccCodigo;
-  document.getElementById('m-valor-total').textContent = fmtMfull(_valorContrato(c));
+  const aditTotal = (c.aditivos || []).reduce((s, a) => s + (a.valor || 0), 0);
+  document.getElementById('m-base-linha').style.display  = aditTotal > 0 ? '' : 'none';
+  document.getElementById('m-adit-linha').style.display  = aditTotal > 0 ? '' : 'none';
+  document.getElementById('m-valor-base').textContent    = fmtMfull(c.valorTotal || 0);
+  document.getElementById('m-aditivos-soma').textContent = fmtMfull(aditTotal);
+  document.getElementById('m-valor-total').textContent   = fmtMfull(_valorContrato(c));
   document.getElementById('m-executado').textContent   = fmtMfull(c.valorExecutado || 0);
   document.getElementById('m-faturado').textContent    = fmtMfull(c.valorFaturado || 0);
   document.getElementById('m-recebido').textContent    = fmtMfull(c.valorRecebido || 0);
