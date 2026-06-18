@@ -465,18 +465,53 @@ function _fecharModal() {
   _contratoAberto = null;
 }
 
-async function _encerrarContrato() {
+function _encerrarContrato() {
   if (!_contratoAberto || _perfil?.nivel === 'operacao') return;
-  if (!confirm('Encerrar o contrato ' + _contratoAberto.numContrato + '?')) return;
-  const hoje       = new Date();
-  const encerradoEm = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-  await atualizarContrato(_contratoAberto.id, { status: 'encerrado', encerradoEm });
-  const idx = _contratos.findIndex(c => c.id === _contratoAberto.id);
-  if (idx >= 0) { _contratos[idx].status = 'encerrado'; _contratos[idx].encerradoEm = encerradoEm; }
-  _fecharModal();
-  _renderKPIs();
-  _renderBanner();
-  _renderTabela();
+  const hoje  = new Date();
+  const mesHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+
+  // Mini-modal de confirmação com seletor de mês
+  const overlay = document.createElement('div');
+  overlay.style.cssText =
+    'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--card);border-radius:10px;padding:28px 24px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,.25)">
+      <div style="font-size:14px;font-weight:700;margin-bottom:6px">Encerrar contrato</div>
+      <div style="font-size:12px;color:var(--mu);margin-bottom:18px">${_contratoAberto.numContrato} — ${_contratoAberto.cliente}</div>
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);display:block;margin-bottom:6px">
+        Mês de encerramento
+      </label>
+      <input type="month" id="inp-enc-mes" value="${mesHoje}"
+        style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:7px 10px;
+               font-size:13px;font-family:var(--fonte);background:var(--bg);color:var(--texto);outline:none;margin-bottom:20px">
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="btn-enc-cancelar"
+          style="border:1px solid var(--bd);background:none;border-radius:6px;padding:7px 16px;font-size:12px;cursor:pointer;color:var(--texto)">
+          Cancelar
+        </button>
+        <button id="btn-enc-confirmar"
+          style="border:none;background:var(--vermelho);color:#fff;border-radius:6px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer">
+          Encerrar
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  document.getElementById('inp-enc-mes').focus();
+
+  document.getElementById('btn-enc-cancelar').addEventListener('click', () => overlay.remove());
+  document.getElementById('btn-enc-confirmar').addEventListener('click', async () => {
+    const encerradoEm = document.getElementById('inp-enc-mes').value;
+    if (!encerradoEm) return;
+    overlay.remove();
+    await atualizarContrato(_contratoAberto.id, { status: 'encerrado', encerradoEm });
+    const idx = _contratos.findIndex(c => c.id === _contratoAberto.id);
+    if (idx >= 0) { _contratos[idx].status = 'encerrado'; _contratos[idx].encerradoEm = encerradoEm; }
+    _fecharModal();
+    _renderKPIs();
+    _renderBanner();
+    _renderTabela();
+  });
 }
 
 function _editarContrato() {
