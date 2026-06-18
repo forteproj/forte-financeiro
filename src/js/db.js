@@ -7,6 +7,36 @@ import {
 
 export { increment };
 
+// ── Backup Google Sheets ─────────────────────────────────────────────────
+// Após criar o Apps Script, cole a URL do Web App aqui:
+const SHEETS_WEBHOOK_URL = '';
+
+function _syncSheets(lanc) {
+  if (!SHEETS_WEBHOOK_URL) return;
+  fetch(SHEETS_WEBHOOK_URL, {
+    method:  'POST',
+    mode:    'no-cors', // evita preflight CORS; resposta é opaca (ok para backup)
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: JSON.stringify({
+      token:         'forte-backup',
+      data:          lanc.data          || '',
+      mes:           lanc.mes           || '',
+      ano:           lanc.ano           || '',
+      tipo:          lanc.tipo          || '',
+      categoria:     lanc.categoria     || '',
+      categoriaDesc: lanc.categoriaDesc || '',
+      cc:            lanc.cc            || '',
+      valor:         lanc.valor         || 0,
+      formaPgto:     lanc.formaPgto     || '',
+      fornecedor:    lanc.fornecedor    || '',
+      info:          lanc.info          || '',
+      nrDoc:         lanc.nrDoc         || '',
+      contrato:      lanc.contrato      || '',
+      lancadoPor:    lanc.lancadoPor    || '',
+    }),
+  }).catch(() => {}); // silencioso — backup não bloqueia o fluxo principal
+}
+
 // ════════════════════════════════════════════
 //  PLANO DE CONTAS
 // ════════════════════════════════════════════
@@ -98,8 +128,8 @@ export async function salvarLancamento(lanc) {
   const ref = await addDoc(collection(db, 'lancamentos'), {
     ...lanc,
     lancadoEm: serverTimestamp(),
-    syncedToSheets: false,
   });
+  _syncSheets(lanc); // backup assíncrono para Google Sheets
   return ref.id;
 }
 
