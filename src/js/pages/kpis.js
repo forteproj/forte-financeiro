@@ -210,13 +210,12 @@ function _prazoPagMes(tipo, lancsAno) {
       l.tipo === tipo &&
       _efetivaMes(l) === mes &&
       l.data &&
-      l.formaPgto !== 'Retenção'   // retenções fiscais não são prazo de pagamento a fornecedor
+      l.dataLancamento &&           // sem data de emissão não há como calcular prazo real
+      l.formaPgto !== 'Retenção'    // retenções fiscais não são prazo de pagamento a fornecedor
     );
     if (!lancs.length) return null;
 
-    const _ref = l => l.dataLancamento
-      ? new Date(l.dataLancamento + 'T00:00:00')
-      : new Date((l.dataRenegociacao || l.data) + 'T00:00:00'); // sem dataLancamento: prazo = 0 (à vista)
+    const _ref  = l => new Date(l.dataLancamento + 'T00:00:00');
     const _dias = l => Math.max(0, Math.round(
       (new Date((l.dataRenegociacao || l.data) + 'T00:00:00') - _ref(l)) / 86400000
     ));
