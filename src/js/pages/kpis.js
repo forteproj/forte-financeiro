@@ -328,13 +328,14 @@ function _inputsHtml(manMes, autoMes, backlogArr, recMaiorArr, pmrArr, pmpArr, s
 
   const rows = INPUT_DEFS.map(def => {
     const cells = manMes.map((man, i) => {
-      const v = man[def.key] ?? '';
+      const raw = man[def.key];
+      const display = (raw != null && raw !== '') ? Number(raw).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
       return `<td style="padding:2px 3px">
-        <input type="number" class="kpi-inp"
-          data-campo="${def.key}" data-mes="${i}" value="${v}"
+        <input type="text" inputmode="decimal" class="kpi-inp"
+          data-campo="${def.key}" data-mes="${i}" value="${display}"
           style="width:100%;text-align:right;border:1px solid #D4A017;border-radius:5px;
                  padding:4px 6px;font-size:11px;font-family:var(--ds-font);
-                 background:#FFFBF0;color:var(--ds-tx);outline:none;-moz-appearance:textfield" />
+                 background:#FFFBF0;color:var(--ds-tx);outline:none" />
       </td>`;
     }).join('');
     const nums  = manMes.map(m => m[def.key]).filter(v => v != null && v !== '' && !isNaN(v));
@@ -434,6 +435,15 @@ function _kpiRows(dreMes, manMes, recMedia, autoMes) {
 // ── Bind: inputs manuais ──────────────────────────────────────────────────
 function _bindInputs(dreMes, manMes, recMedia, autoMes) {
   document.querySelectorAll('.kpi-inp').forEach(inp => {
+    inp.addEventListener('focus', () => {
+      const raw = parseFloat(inp.value.replace(/\./g, '').replace(',', '.'));
+      inp.value = isNaN(raw) ? '' : String(raw);
+      inp.select();
+    });
+    inp.addEventListener('blur', () => {
+      const raw = parseFloat(inp.value.replace(',', '.'));
+      inp.value = isNaN(raw) ? '' : raw.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    });
     inp.addEventListener('change', () => {
       const idx = +inp.dataset.mes;
       clearTimeout(_saveTimers[idx]);
@@ -448,9 +458,10 @@ async function _salvarManual(mesIdx, dreMes, manMes, recMedia, autoMes) {
   const dados    = { ano: _ano, mes: MESES[mesIdx] };
 
   INPUT_DEFS.forEach(def => {
-    const el = document.querySelector(`.kpi-inp[data-campo="${def.key}"][data-mes="${mesIdx}"]`);
-    const v  = el?.value.trim();
-    dados[def.key] = (v !== '' && v != null) ? Number(v) : null;
+    const el  = document.querySelector(`.kpi-inp[data-campo="${def.key}"][data-mes="${mesIdx}"]`);
+    const txt = el?.value.trim() ?? '';
+    const raw = parseFloat(txt.replace(/\./g, '').replace(',', '.'));
+    dados[def.key] = (!isNaN(raw) && txt !== '') ? raw : null;
   });
 
   if (statusEl) statusEl.textContent = `Salvando ${MESES[mesIdx]}...`;
