@@ -142,9 +142,12 @@ function _backlogMes(contratos, lancsAno, ano) {
 
   return MESES.map((_, mi) =>
     relevantes.reduce((total, c) => {
-      // Contrato encerrado: excluir a partir do mês de encerramento
+      // Contrato encerrado: excluir a partir do mês SEGUINTE ao encerramento
+      // Se encerradoEm não registrado (contrato antigo), usa mês atual como referência
       if (c.status === 'encerrado') {
-        if (!c.encerradoEm || anoMesStr(mi) >= c.encerradoEm) return total;
+        const encRef = c.encerradoEm ||
+          `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+        if (anoMesStr(mi) > encRef) return total;
       }
       // Contrato ainda não iniciado neste mês
       if (c.inicio) {
