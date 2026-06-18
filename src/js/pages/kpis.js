@@ -200,19 +200,36 @@ function _faturasVencidasMes(lancsAno) {
   );
 }
 
-// ── PMR / PMP: prazo médio entre dataLancamento e data de pagamento/recebimento ──
+// ── PMR / PMP ──────────────────────────────────────────────────────────────
+// PMP (Gasto):   média ponderada pelo valor — sum(valor × prazo) / sum(valor)
+// PMR (Receita): média simples — sum(prazo) / count
+// Prazo sempre medido de dataLancamento até a data de vencimento efetiva.
 function _prazoPagMes(tipo, lancsAno) {
   return MESES.map(mes => {
     const lancs = lancsAno.filter(l => l.tipo === tipo && _efetivaMes(l) === mes && l.data);
     if (!lancs.length) return null;
-    const terms = lancs.map(l => {
-      const ref = l.dataLancamento
-        ? new Date(l.dataLancamento + 'T00:00:00')
-        : new Date(_ano, MESES.indexOf(_efetivaMes(l)), 1); // fallback: dia 1 do mês efetivo
-      const payDate = new Date((l.dataRenegociacao || l.data) + 'T00:00:00');
-      return Math.max(0, Math.round((payDate - ref) / 86400000));
-    });
-    return terms.reduce((s, t) => s + t, 0) / terms.length;
+
+    const _ref = l => l.dataLancamento
+      ? new Date(l.dataLancamento + 'T00:00:00')
+      : new Date(_ano, MESES.indexOf(_efetivaMes(l)), 1);
+    const _dias = l => Math.max(0, Math.round(
+      (new Date((l.dataRenegociacao || l.data) + 'T00:00:00') - _ref(l)) / 86400000
+    ));
+
+    if (tipo === 'Gasto') {
+      // PMP: ponderado pelo valor absoluto
+      let sumPeso = 0, sumPesoDias = 0;
+      for (const l of lancs) {
+        const peso = Math.abs(l.valor || 0);
+        sumPesoDias += peso * _dias(l);
+        sumPeso     += peso;
+      }
+      return sumPeso > 0 ? sumPesoDias / sumPeso : null;
+    } else {
+      // PMR: média simples — comportamento do cliente, não o valor
+      const dias = lancs.map(_dias);
+      return dias.reduce((s, d) => s + d, 0) / dias.length;
+    }
   });
 }
 
