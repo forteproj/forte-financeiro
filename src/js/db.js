@@ -15,10 +15,11 @@ function _syncSheets(lanc) {
   if (!SHEETS_WEBHOOK_URL) return;
   fetch(SHEETS_WEBHOOK_URL, {
     method:  'POST',
-    mode:    'no-cors', // evita preflight CORS; resposta é opaca (ok para backup)
+    mode:    'no-cors',
     headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
     body: JSON.stringify({
       token:         'forte-backup',
+      id:            lanc.id            || '',
       data:          lanc.data          || '',
       mes:           lanc.mes           || '',
       ano:           lanc.ano           || '',
@@ -34,7 +35,17 @@ function _syncSheets(lanc) {
       contrato:      lanc.contrato      || '',
       lancadoPor:    lanc.lancadoPor    || '',
     }),
-  }).catch(() => {}); // silencioso — backup não bloqueia o fluxo principal
+  }).catch(() => {});
+}
+
+function _syncSheetsDelete(id) {
+  if (!SHEETS_WEBHOOK_URL) return;
+  fetch(SHEETS_WEBHOOK_URL, {
+    method:  'POST',
+    mode:    'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: JSON.stringify({ token: 'forte-backup', action: 'delete', id }),
+  }).catch(() => {});
 }
 
 // ════════════════════════════════════════════
@@ -129,7 +140,7 @@ export async function salvarLancamento(lanc) {
     ...lanc,
     lancadoEm: serverTimestamp(),
   });
-  _syncSheets(lanc); // backup assíncrono para Google Sheets
+  _syncSheets({ ...lanc, id: ref.id });
   return ref.id;
 }
 
@@ -163,6 +174,7 @@ export async function carregarLancamentos(ano) {
 
 export async function deletarLancamento(id) {
   await deleteDoc(doc(db, 'lancamentos', id));
+  _syncSheetsDelete(id);
 }
 
 export async function atualizarLancamento(id, dados) {
