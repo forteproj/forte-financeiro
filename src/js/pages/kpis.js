@@ -254,7 +254,10 @@ function _render() {
   const manMes       = MESES.map((_, i) => _manuais[`${_ano}-${String(i+1).padStart(2,'0')}`] || {});
   const backlogMes   = _backlogMes(_contratos, _lancamentos, _ano);
   const recMaiorMes  = _receitaMaiorMes(_lancamentos);
-  const saldoCaixaMes = dreMes.map(d => d.resultado);
+  const saldoCaixaMes = dreMes.reduce((acc, d) => {
+    acc.push((acc.at(-1) ?? 0) + d.resultado);
+    return acc;
+  }, []);
 
   document.getElementById('kpi-body').innerHTML =
     _inputsHtml(manMes, backlogMes, recMaiorMes, saldoCaixaMes) +
