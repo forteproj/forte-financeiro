@@ -177,6 +177,40 @@ export async function deletarLancamento(id) {
   _syncSheetsDelete(id);
 }
 
+export async function importarLancamentosCSV(rows) {
+  const CHUNK = 400;
+  let total = 0;
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    const batch = writeBatch(db);
+    for (const row of chunk) {
+      const ref = row.id
+        ? doc(db, 'lancamentos', row.id)
+        : doc(collection(db, 'lancamentos'));
+      batch.set(ref, {
+        data:          row.data          || '',
+        mes:           Number(row.mes)   || 0,
+        ano:           Number(row.ano)   || 0,
+        tipo:          row.tipo          || '',
+        categoria:     row.categoria     || '',
+        categoriaDesc: row.categoriaDesc || '',
+        cc:            row.cc            || '',
+        valor:         Number(row.valor) || 0,
+        formaPgto:     row.formaPgto     || '',
+        fornecedor:    row.fornecedor    || '',
+        info:          row.info          || '',
+        nrDoc:         row.nrDoc         || '',
+        contrato:      row.contrato      || '',
+        lancadoPor:    row.lancadoPor    || '',
+        lancadoEm:     serverTimestamp(),
+      });
+      total++;
+    }
+    await batch.commit();
+  }
+  return total;
+}
+
 export async function atualizarLancamento(id, dados) {
   await updateDoc(doc(db, 'lancamentos', id), dados);
 }

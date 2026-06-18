@@ -14,6 +14,7 @@ const ROTAS = {
   'fluxo-caixa':      () => import('./pages/fluxo-caixa.js'),
   'dre-comparativo':  () => import('./pages/dre-comparativo.js'),
   'dre-por-cc':       () => import('./pages/dre-por-cc.js'),
+  'importar-backup':  () => import('./pages/importar-backup.js'),
 };
 
 const PERMISSOES = {
@@ -28,6 +29,7 @@ const PERMISSOES = {
   'fluxo-caixa':     'financeiro',
   'dre-comparativo': 'financeiro',
   'dre-por-cc':      'financeiro',
+  'importar-backup': 'financeiro',
 };
 
 let paginaAtual = null;

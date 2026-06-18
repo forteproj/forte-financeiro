@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { rota: 'dre-comparativo', label: 'DRE Comparativo',   nivel: 'financeiro' },
   { rota: 'dre-por-cc',      label: 'DRE por CC',        nivel: 'financeiro' },
   { rota: 'plano-contas',    label: 'Plano de Contas',   nivel: 'operacao'   },
+  { rota: 'importar-backup', label: 'Importar Backup',   nivel: 'financeiro' },
 ];
 
 window.app = {
