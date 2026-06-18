@@ -142,24 +142,26 @@ function _backlogMes(contratos, lancsAno, ano) {
 
   return MESES.map((_, mi) =>
     relevantes.reduce((total, c) => {
-      // Contrato encerrado: excluir a partir do mês SEGUINTE ao encerramento
-      // Se encerradoEm não registrado (contrato antigo), usa mês atual como referência
-      if (c.status === 'encerrado') {
-        const encRef = c.encerradoEm ||
-          `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-        if (anoMesStr(mi) > encRef) return total;
-      }
-      // Contrato ainda não iniciado neste mês
-      if (c.inicio) {
-        const iniDate = new Date(c.inicio + 'T00:00:00');
-        if (iniDate > new Date(ano, mi + 1, 0)) return total;
-      }
       // Valor efetivo = valorTotal + aditivos vigentes até este mês
       const aditVal = (c.aditivos || [])
         .filter(a => a.data && anoMesStr(mi) >= a.data)
         .reduce((s, a) => s + (a.valor || 0), 0);
       const valorEfetivo = (c.valorTotal || 0) + aditVal;
       const saldoAtual   = Math.max(0, valorEfetivo - (c.valorFaturado || 0));
+
+      // Contrato encerrado: exibe saldoAtual nos meses até encerramento, zero depois
+      if (c.status === 'encerrado') {
+        const encRef = c.encerradoEm ||
+          `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+        if (anoMesStr(mi) > encRef) return total;
+        return total + saldoAtual; // sem recApos — mostra saldo no momento do encerramento
+      }
+
+      // Contrato ainda não iniciado neste mês
+      if (c.inicio) {
+        const iniDate = new Date(c.inicio + 'T00:00:00');
+        if (iniDate > new Date(ano, mi + 1, 0)) return total;
+      }
       if (mi >= mesAtual) return total + saldoAtual;
       const recApos = Object.entries(recMes[c.numContrato] || {})
         .filter(([idx]) => +idx > mi)
