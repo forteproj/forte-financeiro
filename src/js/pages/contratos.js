@@ -175,6 +175,10 @@ function _html(perfil) {
         <div class="detalhe-label">Objeto contratual</div>
         <div class="detalhe-valor" id="m-objeto" style="font-size:11px;font-weight:500;line-height:1.5;color:var(--txs)">—</div>
       </div>
+      <div id="m-aditivos-wrap" style="display:none">
+        <div class="detalhe-label" style="margin-bottom:6px">Aditivos</div>
+        <div id="m-aditivos"></div>
+      </div>
       <div>
         <div class="detalhe-label" style="margin-bottom:4px">Documentos anexados</div>
         <div id="m-docs"></div>
@@ -426,6 +430,30 @@ function _abrirModal(id) {
     : '<div style="font-size:11px;color:var(--mu);font-style:italic;padding:8px 0">Nenhum documento anexado</div>';
 
   document.getElementById('m-id').textContent = 'ID: ' + c.id;
+
+  const aditivos = c.aditivos || [];
+  const wrapAdit = document.getElementById('m-aditivos-wrap');
+  if (aditivos.length) {
+    wrapAdit.style.display = '';
+    document.getElementById('m-aditivos').innerHTML =
+      `<div style="display:flex;flex-direction:column;gap:5px">` +
+      aditivos.map(a => {
+        const [ay, am] = (a.data || '').split('-');
+        const mesLabel = ay && am
+          ? ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][+am - 1] + '/' + ay
+          : '—';
+        return `<div style="display:flex;align-items:center;gap:10px;
+                             background:var(--sf);border:1px solid var(--bd);
+                             border-radius:var(--raio);padding:7px 12px;font-size:11px">
+          <span style="font-weight:700;color:var(--verde)">${fmtMfull(a.valor || 0)}</span>
+          <span style="color:var(--mu)">a partir de</span>
+          <span style="font-weight:600">${mesLabel}</span>
+          ${a.desc ? `<span style="color:var(--txs);margin-left:4px">· ${a.desc}</span>` : ''}
+        </div>`;
+      }).join('') + `</div>`;
+  } else {
+    wrapAdit.style.display = 'none';
+  }
 
   // Retenções
   const ret        = c.retencoes || {};
