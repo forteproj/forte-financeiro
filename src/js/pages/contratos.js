@@ -468,9 +468,11 @@ function _fecharModal() {
 async function _encerrarContrato() {
   if (!_contratoAberto || _perfil?.nivel === 'operacao') return;
   if (!confirm('Encerrar o contrato ' + _contratoAberto.numContrato + '?')) return;
-  await atualizarContrato(_contratoAberto.id, { status: 'encerrado' });
+  const hoje       = new Date();
+  const encerradoEm = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+  await atualizarContrato(_contratoAberto.id, { status: 'encerrado', encerradoEm });
   const idx = _contratos.findIndex(c => c.id === _contratoAberto.id);
-  if (idx >= 0) _contratos[idx].status = 'encerrado';
+  if (idx >= 0) { _contratos[idx].status = 'encerrado'; _contratos[idx].encerradoEm = encerradoEm; }
   _fecharModal();
   _renderKPIs();
   _renderBanner();

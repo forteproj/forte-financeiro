@@ -123,9 +123,14 @@ function _dre(lancs) {
 
 // ── Backlog por mês ───────────────────────────────────────────────────────
 function _backlogMes(contratos, lancsAno, ano) {
-  const hoje     = new Date();
-  const mesAtual = (ano === hoje.getFullYear()) ? hoje.getMonth() : 11;
-  const ativos   = contratos.filter(c => c.status === 'ativo' && (c.valorTotal || 0) > 0);
+  const hoje      = new Date();
+  const mesAtual  = (ano === hoje.getFullYear()) ? hoje.getMonth() : 11;
+  const anoMesStr = mi => `${ano}-${String(mi + 1).padStart(2, '0')}`;
+
+  // Inclui ativo + encerrado (encerrado só entra em meses antes de encerradoEm)
+  const relevantes = contratos.filter(c =>
+    (c.status === 'ativo' || c.status === 'encerrado') && (c.valorTotal || 0) > 0
+  );
 
   const recMes = {};
   lancsAno.filter(l => l.tipo === 'Receita' && l.contrato).forEach(l => {
@@ -136,12 +141,22 @@ function _backlogMes(contratos, lancsAno, ano) {
   });
 
   return MESES.map((_, mi) =>
-    ativos.reduce((total, c) => {
+    relevantes.reduce((total, c) => {
+      // Contrato encerrado: excluir a partir do mês de encerramento
+      if (c.status === 'encerrado') {
+        if (!c.encerradoEm || anoMesStr(mi) >= c.encerradoEm) return total;
+      }
+      // Contrato ainda não iniciado neste mês
       if (c.inicio) {
         const iniDate = new Date(c.inicio + 'T00:00:00');
         if (iniDate > new Date(ano, mi + 1, 0)) return total;
       }
-      const saldoAtual = Math.max(0, (c.valorTotal || 0) - (c.valorFaturado || 0));
+      // Valor efetivo = valorTotal + aditivos vigentes até este mês
+      const aditVal = (c.aditivos || [])
+        .filter(a => a.data && anoMesStr(mi) >= a.data)
+        .reduce((s, a) => s + (a.valor || 0), 0);
+      const valorEfetivo = (c.valorTotal || 0) + aditVal;
+      const saldoAtual   = Math.max(0, valorEfetivo - (c.valorFaturado || 0));
       if (mi >= mesAtual) return total + saldoAtual;
       const recApos = Object.entries(recMes[c.numContrato] || {})
         .filter(([idx]) => +idx > mi)

@@ -3,6 +3,7 @@ import { formatarValorInput, parseMoeda, tipoIconeArquivo, fmtBytes, mostrarMsg,
 
 let _perfil          = null;
 let _arquivos        = [];
+let _aditivos        = [];
 let _modoEdicao      = false;
 let _contratoId      = null;
 
@@ -39,6 +40,7 @@ export async function mount(container, perfil) {
 
 export function destroy() {
   _arquivos   = [];
+  _aditivos   = [];
   _modoEdicao = false;
   _contratoId = null;
 }
@@ -248,7 +250,14 @@ function _html() {
       </div>
     </div>
 
-    <!-- SEÇÃO 6: DOCUMENTOS -->
+    <!-- SEÇÃO 6: ADITIVOS -->
+    <div class="form-section">
+      <div class="section-titulo">Aditivos</div>
+      <div id="aditivos-lista" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+      <button type="button" id="btn-add-aditivo" class="btn-limpar">+ Adicionar Aditivo</button>
+    </div>
+
+    <!-- SEÇÃO 7: DOCUMENTOS -->
     <div class="form-section">
       <div class="section-titulo">Documentos anexos</div>
       <div class="upload-area" id="upload-area">
@@ -277,6 +286,66 @@ function _html() {
 </div>`;
 }
 
+// ── Aditivos ──────────────────────────────────────
+function _renderAditivos() {
+  const lista = document.getElementById('aditivos-lista');
+  if (!lista) return;
+  if (!_aditivos.length) {
+    lista.innerHTML = '<div style="font-size:12px;color:var(--mu);padding:2px 0">Nenhum aditivo cadastrado.</div>';
+    return;
+  }
+  const inp = (cls, idx, val, extra = '') =>
+    `<input type="text" class="${cls}" data-idx="${idx}" value="${val}" ${extra}
+       style="width:100%;border:1px solid var(--bd);border-radius:var(--raio);
+              padding:6px 8px;font-size:12px;font-family:var(--ds-font);
+              background:var(--sf);color:var(--texto);outline:none">`;
+  lista.innerHTML = _aditivos.map((a, i) => `
+    <div style="display:flex;gap:8px;align-items:flex-end;background:var(--sf);
+                border:1px solid var(--bd);border-radius:var(--raio);padding:10px 12px">
+      <div style="flex:0 0 155px">
+        <div class="campo-label" style="margin-bottom:4px">Valor (R$)*</div>
+        ${inp('adit-valor', i,
+          a.valor ? Number(a.valor).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '',
+          'inputmode="decimal" placeholder="0,00"')}
+      </div>
+      <div style="flex:0 0 150px">
+        <div class="campo-label" style="margin-bottom:4px">Mês de adesão*</div>
+        <input type="month" class="adit-data" data-idx="${i}" value="${a.data || ''}"
+          style="width:100%;border:1px solid var(--bd);border-radius:var(--raio);
+                 padding:6px 8px;font-size:12px;font-family:var(--ds-font);
+                 background:var(--sf);color:var(--texto);outline:none">
+      </div>
+      <div style="flex:1">
+        <div class="campo-label" style="margin-bottom:4px">Descrição</div>
+        ${inp('adit-desc', i, a.desc || '', 'placeholder="Ex: Ampliação de escopo"')}
+      </div>
+      <button type="button" class="adit-rm" data-idx="${i}"
+        style="flex-shrink:0;background:none;border:1px solid var(--vermelho);
+               border-radius:var(--raio);color:var(--vermelho);cursor:pointer;
+               padding:5px 10px;font-size:13px;line-height:1">✕</button>
+    </div>`).join('');
+
+  lista.querySelectorAll('.adit-valor').forEach(el =>
+    el.addEventListener('input', () => formatarValorInput(el))
+  );
+  lista.querySelectorAll('.adit-rm').forEach(btn =>
+    btn.addEventListener('click', () => {
+      _coletarAditivos();
+      _aditivos.splice(+btn.dataset.idx, 1);
+      _renderAditivos();
+    })
+  );
+}
+
+function _coletarAditivos() {
+  _aditivos = Array.from(document.querySelectorAll('.adit-valor')).map((el, i) => ({
+    valor: parseMoeda(el.value) || 0,
+    data:  document.querySelector(`.adit-data[data-idx="${i}"]`)?.value || '',
+    desc:  (document.querySelector(`.adit-desc[data-idx="${i}"]`)?.value || '').trim(),
+  }));
+  return _aditivos;
+}
+
 // ── Bind ──────────────────────────────────────────
 function _bindEventos() {
   document.getElementById('f-cc-codigo').addEventListener('input', _atualizarPreview);
@@ -286,11 +355,18 @@ function _bindEventos() {
   document.getElementById('btn-salvar').addEventListener('click', _salvar);
   document.getElementById('btn-limpar').addEventListener('click', _limpar);
   document.getElementById('btn-ver-contratos').addEventListener('click', () => window.app.navigate('contratos'));
+  document.getElementById('btn-add-aditivo').addEventListener('click', () => {
+    _coletarAditivos();
+    _aditivos.push({ valor: 0, data: '', desc: '' });
+    _renderAditivos();
+  });
 
   const area = document.getElementById('upload-area');
   area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('dragover'); });
   area.addEventListener('dragleave', () => area.classList.remove('dragover'));
   area.addEventListener('drop', e => { e.preventDefault(); area.classList.remove('dragover'); _adicionarArquivos(e.dataTransfer.files); });
+
+  _renderAditivos();
 }
 
 function _atualizarPreview() {
@@ -354,8 +430,10 @@ function _preencherFormulario(c) {
   document.getElementById('f-ret-irrf').value      = c.retencoes?.irrf || 0;
   document.getElementById('f-ret-pcc').value       = c.retencoes?.pcc  || 0;
   document.getElementById('f-ret-icms').value      = c.retencoes?.icms || 0;
-  _arquivos = (c.documentos || []).map(d => ({ name: d.nome, size: d.size, type: d.tipo, _existente: true }));
+  _arquivos  = (c.documentos || []).map(d => ({ name: d.nome, size: d.size, type: d.tipo, _existente: true }));
+  _aditivos  = (c.aditivos  || []).map(a => ({ ...a }));
   _renderArquivos();
+  _renderAditivos();
   _atualizarPreview();
 }
 
@@ -409,6 +487,7 @@ async function _salvar() {
         icms:      parseFloat(document.getElementById('f-ret-icms').value)  || 0,
       },
       documentos:  _arquivos.map(f => ({ nome: f.name, size: f.size, tipo: f.type })),
+      aditivos:    _coletarAditivos().filter(a => a.valor > 0 && a.data),
       cadastradoPor: _perfil?.nome || 'Sistema',
     };
 
@@ -485,6 +564,8 @@ function _limpar() {
   });
   document.getElementById('cod-preview').style.display = 'none';
   _arquivos = [];
+  _aditivos = [];
   _renderArquivos();
+  _renderAditivos();
   esconderMsg('msg-feedback');
 }
