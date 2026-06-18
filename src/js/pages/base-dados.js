@@ -239,7 +239,7 @@ function _filtrar() {
   _filtrados = _lancamentos.filter(l => {
     if (tipo  && l.tipo  !== tipo)  return false;
     if (dia   && l.data  !== dia)   return false;
-    if (!dia  && mes && l.mes !== mes) return false;
+    if (!dia  && mes && mesNome(l.dataRenegociacao || l.data) !== mes) return false;
     if (cc    && l.cc    !== cc)    return false;
     if (grupo && !(l.categoria || '').startsWith(grupo + '.')) return false;
     if (status && _calcStatus(l) !== status) return false;
