@@ -343,13 +343,14 @@ function _render() {
 }
 
 // ── Linha read-only (calculada automaticamente) ───────────────────────────
-function _autoRow(label, vals, fmtFn) {
+function _autoRow(label, vals, fmtFn, showZero = false) {
   const cells = vals.map(v => {
-    const txt  = v != null && v !== 0 ? fmtFn(v) : '—';
+    const visible = v != null && (v !== 0 || showZero);
+    const txt  = visible ? fmtFn(v) : '—';
     const clr  = typeof v === 'number' && v < 0 ? 'var(--ds-red)' : 'var(--ds-blu)';
     return `<td style="text-align:right;font-size:11px;font-weight:600;padding:5px 6px;color:${clr}">${txt}</td>`;
   }).join('');
-  const num    = vals.filter(v => v != null && v !== 0);
+  const num    = vals.filter(v => v != null && (v !== 0 || showZero));
   const media  = num.length ? fmtFn(num.reduce((s,v) => s+v, 0) / num.length) : '—';
   return `<tr style="background:var(--ds-bg2)">
     <td style="font-size:11px;padding:5px 10px;font-weight:600;color:var(--ds-tx2);white-space:nowrap">
@@ -392,8 +393,8 @@ function _inputsHtml(manMes, autoMes, backlogArr, recMaiorArr, pmrArr, pmpArr, s
   }).join('');
 
   const saldoRow = _autoRow('Saldo de Caixa fim do mês (R$)',         saldoArr,    v => fmtMfull(v));
-  const pmrRow   = _autoRow('PMR — Prazo Médio Recebimento (dias)',   pmrArr,      v => Math.round(v) + ' d');
-  const pmpRow   = _autoRow('PMP — Prazo Médio Pagamento (dias)',     pmpArr,      v => Math.round(v) + ' d');
+  const pmrRow   = _autoRow('PMR — Prazo Médio Recebimento (dias)',   pmrArr,      v => Math.round(v) + ' d', true);
+  const pmpRow   = _autoRow('PMP — Prazo Médio Pagamento (dias)',     pmpArr,      v => Math.round(v) + ' d', true);
   const recRow   = _autoRow('Receita do Maior Cliente (R$)',          recMaiorArr, v => fmtMfull(v));
   const blgRow   = _autoRow('Backlog — carteira a executar (R$)',     backlogArr,  v => fmtMfull(v));
   const fatRow   = _autoRow('Faturas Vencidas (R$)',                  fatVencArr,  v => fmtMfull(v));
