@@ -225,12 +225,16 @@ function _prazoPagMes(tipo, lancsAno) {
       l.tipo === tipo &&
       _mesPrazoPag(l) === mes &&
       l.data &&
-      l.dataLancamento &&           // sem data de emissão não há como calcular prazo real
-      l.formaPgto !== 'Retenção'    // retenções fiscais não são prazo de pagamento a fornecedor
+      // PMP exige dataLancamento (fallback dia-1 dava valores errados p/ compras avulsas)
+      // PMR aceita fallback dia-1 (NFS-e emitida no início do mês = aproximação razoável)
+      (tipo === 'Gasto' ? !!l.dataLancamento : true) &&
+      l.formaPgto !== 'Retenção'
     );
     if (!lancs.length) return null;
 
-    const _ref  = l => new Date(l.dataLancamento + 'T00:00:00');
+    const _ref = l => l.dataLancamento
+      ? new Date(l.dataLancamento + 'T00:00:00')
+      : new Date(_ano, MESES.indexOf(_mesPrazoPag(l)), 1); // PMR fallback: dia 1 do mês
     const _dias = l => Math.max(0, Math.round(
       (new Date(_dataEfetivaPag(l) + 'T00:00:00') - _ref(l)) / 86400000
     ));
