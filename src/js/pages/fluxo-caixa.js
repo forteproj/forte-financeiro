@@ -1,5 +1,5 @@
 import { carregarLancamentos, carregarContratos } from '../db.js';
-import { fmtMfull } from '../utils.js';
+import { fmtMfull, mesNome } from '../utils.js';
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -75,7 +75,7 @@ function _render() {
   const clienteNome = cc => contratoMap[cc] || cc;
 
   // Por mês
-  const porMes = m => _lancamentos.filter(l => l.mes === m);
+  const porMes = m => _lancamentos.filter(l => mesNome(l.dataRenegociacao || l.data) === m);
   const total  = _lancamentos;
 
   const fR = v => v ? fmtMfull(v)  : '—';
@@ -190,7 +190,7 @@ function _render() {
   const finRecMes = MESES.map(m => soma(porMes(m), l => l.tipo==='Receita' && l.categoria?.startsWith('5.')));
   const finRecAno = soma(total, l => l.tipo==='Receita' && l.categoria?.startsWith('5.'));
   const finTotMes = MESES.map((_,i) =>
-    somaAbs(_lancamentos.filter(l=>l.mes===MESES[i]), l=>l.tipo==='Gasto'&&l.categoria?.startsWith('5.')) - finRecMes[i]);
+    somaAbs(porMes(MESES[i]), l=>l.tipo==='Gasto'&&l.categoria?.startsWith('5.')) - finRecMes[i]);
   const finTotAno = somaAbs(total, l=>l.tipo==='Gasto'&&l.categoria?.startsWith('5.')) - finRecAno;
 
   // ── SALDO FINAL ──────────────────────────────────────
