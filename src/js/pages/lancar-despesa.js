@@ -746,7 +746,7 @@ async function _salvar() {
       ? `${n} parcelas lançadas · total ${fmtMfull(valorTotal)} · ${ccVal}`
       : isJuros && jurosValorCapturado > 0
         ? `Despesa lançada · ${fmtMfull(valorTotal)} em ${ccVal} + juros ${fmtMfull(jurosValorCapturado)} → 5.1.002 em CC-ADM-01-MATRIZ`
-        : `Despesa lançada: ${catDesc.split('—').slice(1).join('—').trim() || catDesc} · ${fmtMfull(valorTotal)} · ${ccVal}`
+        : `Despesa lançada: ${catDesc.split('—').slice(1).join('—').trim() || catDesc} · ${fmtMfull(valorTotal)} · ${ccVal} [juros: marcado=${isJuros}, valor="${jurosRaw}", parsedR$=${jurosValorCapturado}]`
     );
     _limpar();
     _renderHistorico();

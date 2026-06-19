@@ -15,7 +15,7 @@ import {
   sendPasswordResetEmail, onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
-  initializeFirestore, memoryLocalCache,
+  getFirestore,
   collection, doc, getDoc, getDocs, addDoc, setDoc,
   updateDoc, deleteDoc, query, where, orderBy,
   limit, serverTimestamp, writeBatch, increment,
@@ -30,7 +30,7 @@ import {
 const app = initializeApp(firebaseConfig);
 
 export const auth    = getAuth(app);
-export const db      = initializeFirestore(app, { localCache: memoryLocalCache() });
+export const db      = getFirestore(app);
 export const fns     = getFunctions(app, 'southamerica-east1');
 export const storage = getStorage(app);
 
