@@ -312,14 +312,6 @@ function _bindEventos() {
   document.getElementById('f-contrato').addEventListener('change', _onContrato);
   document.getElementById('f-tipo-receita').addEventListener('change', _onTipoReceita);
 
-  // Quando muda a data de recebimento, atualiza dataLancamento se ainda não foi editado manualmente
-  document.getElementById('f-data').addEventListener('change', () => {
-    const elLanc = document.getElementById('f-data-lancamento');
-    if (elLanc && !elLanc.dataset.manual) elLanc.value = document.getElementById('f-data').value;
-  });
-  document.getElementById('f-data-lancamento').addEventListener('change', e => {
-    e.target.dataset.manual = '1';
-  });
   document.getElementById('toggle-retencoes').addEventListener('change', _toggleRetencoes);
   document.getElementById('f-valor').addEventListener('input', e => { formatarValorInput(e.target); _calcularRetencoes(); });
   ['aliq-iss', 'aliq-inss', 'aliq-irrf', 'aliq-pcc', 'aliq-icms'].forEach(id =>
@@ -613,7 +605,7 @@ function _setHoje() {
   const elData = document.getElementById('f-data');
   if (elData) elData.value = hoje;
   const elLanc = document.getElementById('f-data-lancamento');
-  if (elLanc) { elLanc.value = hoje; delete elLanc.dataset.manual; }
+  if (elLanc) elLanc.value = hoje;
 }
 
 function _limpar() {
