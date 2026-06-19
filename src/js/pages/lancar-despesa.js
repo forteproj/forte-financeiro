@@ -86,9 +86,9 @@ function _html() {
     <div class="page-sub">Saídas · Custos diretos · ADM · CAPEX · Retenções</div>
   </div>
 
-  <div id="edit-banner" style="display:none;background:rgba(201,146,0,.12);border:1px solid var(--amb);color:var(--tx);padding:10px 18px;border-radius:var(--raio);margin-bottom:14px;align-items:center;justify-content:space-between">
-    <span style="font-size:12px;font-weight:800">✏ Editando lançamento existente</span>
-    <button onclick="window.app.navigate('base-dados')" style="background:var(--amb);color:#1E1C18;border:none;border-radius:4px;padding:4px 14px;font-size:11px;font-weight:800;cursor:pointer">← Base de Dados</button>
+  <div id="edit-banner" style="display:none;background:#b45309;color:#fff;padding:12px 18px;border-radius:var(--raio);margin-bottom:14px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+    <span style="font-size:13px;font-weight:900;letter-spacing:.3px">✏ MODO EDIÇÃO — Alterações serão salvas no lançamento existente</span>
+    <button onclick="window.app.navigate('base-dados')" style="background:#fff;color:#b45309;border:none;border-radius:4px;padding:6px 16px;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap">← Cancelar e voltar</button>
   </div>
 
   ${msgHTML('msg-feedback')}
@@ -840,9 +840,10 @@ function _limpar() {
 
 // ── Modo edição ───────────────────────────────────
 async function _carregarParaEdicao() {
+  _setLoading(true);
   try {
     const l = await buscarLancamento(_editId);
-    if (!l) { mostrarMsg('msg-feedback', 'erro', 'Lançamento não encontrado.'); return; }
+    if (!l) { mostrarMsg('msg-feedback', 'erro', 'Lançamento não encontrado.'); _setLoading(false); return; }
 
     document.getElementById('edit-banner').style.display = 'flex';
     document.getElementById('f-data-lancamento').value = l.dataLancamento || new Date().toISOString().split('T')[0];
@@ -878,6 +879,8 @@ async function _carregarParaEdicao() {
     document.getElementById('btn-limpar').textContent = '← Cancelar';
   } catch (err) {
     mostrarMsg('msg-feedback', 'erro', 'Erro ao carregar lançamento: ' + err.message);
+  } finally {
+    _setLoading(false);
   }
 }
 
