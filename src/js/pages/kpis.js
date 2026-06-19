@@ -252,22 +252,23 @@ function _prazoPagMes(tipo, lancsAno) {
   });
 }
 
-// ── PMR Operacional: fim execução → recebimento (dias corridos) ───────────
-// Usa dataRecebimento se pago; caso contrário usa data prevista (projeção).
-// Bucketed pelo mês de periodoFim para agrupar pela competência da medição.
+// ── PMR Operacional: início execução → recebimento (dias corridos) ────────
+// Mede o ciclo total: desde o início do serviço até o dinheiro no caixa.
+// Usa dataRecebimento se confirmado; caso contrário, usa data prevista.
+// Bucketed pelo mês de periodoInicio (competência do serviço executado).
 function _pmrOperacional(lancsAno) {
   return MESES.map(mes => {
     const lancs = lancsAno.filter(l => {
-      if (l.tipo !== 'Receita' || !l.periodoFim || l.formaPgto === 'Retenção') return false;
+      if (l.tipo !== 'Receita' || !l.periodoInicio || l.formaPgto === 'Retenção') return false;
       const dataPag = l.dataRecebimento || l.dataRenegociacao || l.data;
       if (!dataPag) return false;
-      return MESES[new Date(l.periodoFim + 'T00:00:00').getMonth()] === mes;
+      return MESES[new Date(l.periodoInicio + 'T00:00:00').getMonth()] === mes;
     });
     if (!lancs.length) return null;
     const dias = lancs.map(l => {
       const dataPag = l.dataRecebimento || l.dataRenegociacao || l.data;
       return Math.max(0, Math.round(
-        (new Date(dataPag + 'T00:00:00') - new Date(l.periodoFim + 'T00:00:00')) / 86400000
+        (new Date(dataPag + 'T00:00:00') - new Date(l.periodoInicio + 'T00:00:00')) / 86400000
       ));
     });
     return dias.reduce((s, d) => s + d, 0) / dias.length;
@@ -457,7 +458,7 @@ function _inputsHtml(manMes, autoMes, backlogArr, recMaiorArr, pmrOpArr, pmrCtrA
   }).join('');
 
   const saldoRow  = _autoRow('Saldo de Caixa fim do mês (R$)',                   saldoArr,  v => fmtMfull(v));
-  const pmrOpRow  = _autoRow('PMR Operacional — fim execução → recebimento (d)', pmrOpArr,  v => Math.round(v) + ' d', true);
+  const pmrOpRow  = _autoRow('PMR Operacional — início execução → recebimento (d)', pmrOpArr,  v => Math.round(v) + ' d', true);
   const pmrCtrRow = _autoRow('PMR Contratual — NF emitida → recebimento (d)',    pmrCtrArr, v => Math.round(v) + ' d', true);
   const pmpRow    = _autoRow('PMP — Prazo Médio Pagamento (dias)',                pmpArr,    v => Math.round(v) + ' d', true);
   const recRow     = _autoRow('Receita do Maior Cliente (R$)',                     recMaiorArr,  v => fmtMfull(v));
