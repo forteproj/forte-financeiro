@@ -252,21 +252,24 @@ function _prazoPagMes(tipo, lancsAno) {
   });
 }
 
-// ── PMR Operacional: fim execução → recebimento efetivo (dias corridos) ──
-// Só processa medições com periodoFim E dataRecebimento (pagas).
-// Bucketed pelo mês de dataRecebimento.
+// ── PMR Operacional: fim execução → recebimento (dias corridos) ───────────
+// Usa dataRecebimento se pago; caso contrário usa data prevista (projeção).
+// Bucketed pelo mês de periodoFim para agrupar pela competência da medição.
 function _pmrOperacional(lancsAno) {
   return MESES.map(mes => {
-    const lancs = lancsAno.filter(l =>
-      l.tipo === 'Receita' &&
-      l.periodoFim &&
-      l.dataRecebimento &&
-      MESES[new Date(l.dataRecebimento + 'T00:00:00').getMonth()] === mes
-    );
+    const lancs = lancsAno.filter(l => {
+      if (l.tipo !== 'Receita' || !l.periodoFim || l.formaPgto === 'Retenção') return false;
+      const dataPag = l.dataRecebimento || l.dataRenegociacao || l.data;
+      if (!dataPag) return false;
+      return MESES[new Date(l.periodoFim + 'T00:00:00').getMonth()] === mes;
+    });
     if (!lancs.length) return null;
-    const dias = lancs.map(l => Math.max(0, Math.round(
-      (new Date(l.dataRecebimento + 'T00:00:00') - new Date(l.periodoFim + 'T00:00:00')) / 86400000
-    )));
+    const dias = lancs.map(l => {
+      const dataPag = l.dataRecebimento || l.dataRenegociacao || l.data;
+      return Math.max(0, Math.round(
+        (new Date(dataPag + 'T00:00:00') - new Date(l.periodoFim + 'T00:00:00')) / 86400000
+      ));
+    });
     return dias.reduce((s, d) => s + d, 0) / dias.length;
   });
 }
