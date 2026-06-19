@@ -402,7 +402,7 @@ function _bindEventos() {
 
   document.getElementById('f-valor').addEventListener('input', e => formatarValorInput(e.target));
   document.getElementById('btn-salvar').addEventListener('click', _salvar);
-  document.getElementById('btn-limpar').addEventListener('click', _limpar);
+  document.getElementById('btn-limpar').addEventListener('click', () => { esconderMsg('msg-feedback'); _limpar(); });
 
   // Fornecedor modal
   document.getElementById('btn-novo-forn').addEventListener('click', _abrirModalForn);
@@ -737,7 +737,6 @@ async function _salvar() {
         });
       } catch (jErr) {
         mostrarMsg('msg-feedback', 'erro', `Despesa principal salva, mas falha ao salvar juros: ${jErr.message}`);
-        _limpar();
         _renderHistorico();
         _atualizarContador();
         return;
@@ -837,7 +836,6 @@ function _limpar() {
   if (cp) cp.style.display = '';
   document.getElementById('datas-parcelas').innerHTML      = '';
   _anexo?.clear();
-  esconderMsg('msg-feedback');
 }
 
 // ── Modo edição ───────────────────────────────────
