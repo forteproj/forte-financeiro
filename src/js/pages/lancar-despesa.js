@@ -128,7 +128,34 @@ function _html() {
       </div>
     </div>
 
-    <!-- 2. PARCELAMENTO -->
+    <!-- 2. VALOR E FORNECEDOR -->
+    <div class="form-section">
+      <div class="section-titulo">Valor e fornecedor</div>
+      <div class="row row-3">
+        <div class="campo">
+          <label>Valor total (R$) <span style="color:var(--vermelho)">*</span></label>
+          <input type="text" id="f-valor" placeholder="0,00">
+        </div>
+        <div class="campo">
+          <label>Fornecedor / Beneficiário</label>
+          <div style="display:flex;gap:6px;align-items:stretch">
+            <select id="f-fornecedor" style="flex:1;min-width:0">
+              <option value="">— sem fornecedor —</option>
+            </select>
+            <button type="button" id="btn-novo-forn"
+              style="white-space:nowrap;padding:0 12px;background:var(--amb);color:#1E1C18;border:1px solid var(--amb);border-radius:var(--raio);font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0">
+              + Novo
+            </button>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Informações adicionais</label>
+          <input type="text" id="f-info" placeholder="Descrição complementar">
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. PARCELAMENTO -->
     <div class="form-section">
       <div class="section-titulo">
         Parcelamento / Recorrência
@@ -214,33 +241,6 @@ function _html() {
           <option value="">— sem vínculo de contrato —</option>
         </select>
         <div class="campo-hint">Obrigatório quando CC for CC-CLI-xxx</div>
-      </div>
-    </div>
-
-    <!-- 3. VALOR E FORNECEDOR -->
-    <div class="form-section">
-      <div class="section-titulo">Valor e fornecedor</div>
-      <div class="row row-3">
-        <div class="campo">
-          <label>Valor (R$) <span style="color:var(--vermelho)">*</span></label>
-          <input type="text" id="f-valor" placeholder="0,00">
-        </div>
-        <div class="campo">
-          <label>Fornecedor / Beneficiário</label>
-          <div style="display:flex;gap:6px;align-items:stretch">
-            <select id="f-fornecedor" style="flex:1;min-width:0">
-              <option value="">— sem fornecedor —</option>
-            </select>
-            <button type="button" id="btn-novo-forn"
-              style="white-space:nowrap;padding:0 12px;background:var(--amb);color:#1E1C18;border:1px solid var(--amb);border-radius:var(--raio);font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0">
-              + Novo
-            </button>
-          </div>
-        </div>
-        <div class="campo">
-          <label>Informações adicionais</label>
-          <input type="text" id="f-info" placeholder="Descrição complementar">
-        </div>
       </div>
     </div>
 
@@ -400,9 +400,12 @@ function _bindEventos() {
 
   // Parcelamento
   document.getElementById('toggle-recorrente').addEventListener('change', _onRecorrente);
-  document.getElementById('f-num-parcelas').addEventListener('input', _renderParcelas);
+  document.getElementById('f-num-parcelas').addEventListener('input', () => _renderParcelas({ resetValores: true }));
   document.getElementById('f-frequencia').addEventListener('change', _renderParcelas);
   document.getElementById('f-data-primeira').addEventListener('change', _renderParcelas);
+  document.getElementById('f-valor').addEventListener('input', () => {
+    if (document.getElementById('toggle-recorrente').checked) _renderParcelas({ resetValores: true });
+  });
 }
 
 function _onCategoria() {
@@ -497,10 +500,10 @@ function _onRecorrente() {
   document.getElementById('recorrente-box').style.display = on ? '' : 'none';
   const elData = document.getElementById('f-data');
   if (elData) { elData.disabled = on; elData.style.opacity = on ? '0.4' : ''; }
-  if (on) _renderParcelas();
+  if (on) _renderParcelas({ resetValores: true });
 }
 
-function _renderParcelas() {
+function _renderParcelas({ resetValores = false } = {}) {
   const n    = Math.max(2, Math.min(120, parseInt(document.getElementById('f-num-parcelas').value) || 2));
   const freq = parseInt(document.getElementById('f-frequencia')?.value ?? '30');
   const manual = freq === 0;
@@ -509,9 +512,15 @@ function _renderParcelas() {
   if (campoPrimeira) campoPrimeira.style.display = manual ? 'none' : '';
 
   const container = document.getElementById('datas-parcelas');
-  // Preserva datas antes de limpar (modo manual → manual com mais/menos parcelas)
-  const existing = Array.from(container.querySelectorAll('input[type=date]')).map(el => el.value);
+  const existing  = Array.from(container.querySelectorAll('input[type=date]')).map(el => el.value);
+  const existingV = Array.from(container.querySelectorAll('[data-valor-parcela]')).map(el => el.value);
   container.innerHTML = '';
+
+  const total = parseMoeda(document.getElementById('f-valor').value);
+  const vp    = total > 0 ? total / n : 0;
+  const fmtVP = vp > 0 ? vp.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+
+  const valorCell = i => (!resetValores && existingV[i]) ? existingV[i] : fmtVP;
 
   if (!manual) {
     const primeiraData = document.getElementById('f-data-primeira').value;
@@ -525,14 +534,14 @@ function _renderParcelas() {
     for (let i = 0; i < n; i++) {
       const d = new Date(base);
       d.setDate(d.getDate() + freq * i);
-      grid.appendChild(_celulaData(i, n, d.toISOString().split('T')[0]));
+      grid.appendChild(_celulaData(i, n, d.toISOString().split('T')[0], valorCell(i)));
     }
     const wrap = _wrapGrid(grid, n);
     container.appendChild(wrap);
   } else {
     const grid = _criarGridParcelas();
     for (let i = 0; i < n; i++) {
-      grid.appendChild(_celulaData(i, n, existing[i] || ''));
+      grid.appendChild(_celulaData(i, n, existing[i] || '', valorCell(i)));
     }
     const wrap = _wrapGrid(grid, n);
     container.appendChild(wrap);
@@ -541,7 +550,7 @@ function _renderParcelas() {
 
 function _criarGridParcelas() {
   const g = document.createElement('div');
-  g.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:5px';
+  g.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:5px';
   return g;
 }
 
@@ -553,14 +562,17 @@ function _wrapGrid(grid, n) {
   return w;
 }
 
-function _celulaData(i, n, val) {
+function _celulaData(i, n, datVal, valorFmt) {
   const cell = document.createElement('div');
   cell.style.cssText = 'display:flex;align-items:center;gap:6px;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--raio);padding:5px 8px';
   cell.innerHTML = `
     <span style="font-size:9px;font-weight:800;color:var(--mu);min-width:30px;flex-shrink:0">${i + 1}/${n}</span>
-    <input type="date" data-parcela="${i}" value="${val}"
+    <input type="date" data-parcela="${i}" value="${datVal}"
       style="border:none;background:transparent;font-family:var(--fonte);font-size:11px;font-weight:700;color:var(--tx);outline:none;flex:1;min-width:0;cursor:pointer">
+    <input type="text" data-valor-parcela="${i}" value="${valorFmt}" placeholder="0,00"
+      style="border:none;background:transparent;font-family:var(--fonte);font-size:11px;font-weight:700;color:var(--tx);outline:none;width:82px;text-align:right;cursor:text">
   `;
+  cell.querySelector('[data-valor-parcela]').addEventListener('input', e => formatarValorInput(e.target));
   return cell;
 }
 
@@ -595,8 +607,8 @@ async function _salvar() {
   const fornecedor= document.getElementById('f-fornecedor').value;
   const infoBase  = document.getElementById('f-info').value.trim();
   const contrato  = document.getElementById('f-contrato').value;
-  const valor     = -Math.abs(parseMoeda(valorStr));
-  const n         = datas.length;
+  const valorTotal = Math.abs(parseMoeda(valorStr));
+  const n          = datas.length;
 
   _setLoading(true);
   try {
@@ -608,7 +620,7 @@ async function _salvar() {
         dataLancamento,
         categoria: catId, categoriaDesc: catDesc,
         cc: ccVal, formaPgto: forma,
-        valor, fornecedor, info: infoBase, nrDoc: nrDocBase, contrato,
+        valor: -valorTotal, fornecedor, info: infoBase, nrDoc: nrDocBase, contrato,
         statusPagamento: 'pendente',
         editadoPor: _perfil?.nome || 'Sistema',
         editadoEm:  new Date().toISOString(),
@@ -639,6 +651,13 @@ async function _salvar() {
         ? (infoBase ? infoBase + ' · ' : '') + `Parcela ${i + 1}/${n}`
         : infoBase;
       const nrDoc = isParcelado ? `${nrDocBase}-P${i + 1}` : nrDocBase;
+      let valor;
+      if (isParcelado) {
+        const vEl = document.querySelectorAll('#datas-parcelas [data-valor-parcela]')[i];
+        valor = -(vEl ? Math.abs(parseMoeda(vEl.value)) || valorTotal / n : valorTotal / n);
+      } else {
+        valor = -valorTotal;
+      }
 
       await salvarLancamento({
         tipo:          'Gasto',
@@ -662,8 +681,8 @@ async function _salvar() {
     }
 
     mostrarMsg('msg-feedback', 'sucesso', isParcelado
-      ? `${n} parcelas lançadas · ${fmtMfull(Math.abs(valor))} cada · ${ccVal}`
-      : `Despesa lançada: ${catDesc.split('—').slice(1).join('—').trim() || catDesc} · ${fmtMfull(Math.abs(valor))} · ${ccVal}`
+      ? `${n} parcelas lançadas · total ${fmtMfull(valorTotal)} · ${ccVal}`
+      : `Despesa lançada: ${catDesc.split('—').slice(1).join('—').trim() || catDesc} · ${fmtMfull(valorTotal)} · ${ccVal}`
     );
     _limpar();
     _renderHistorico();
