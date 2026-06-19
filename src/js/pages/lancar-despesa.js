@@ -663,8 +663,7 @@ async function _salvar() {
         editadoPor: _perfil?.nome || 'Sistema',
         editadoEm:  new Date().toISOString(),
       });
-      mostrarMsg('msg-feedback', 'sucesso', 'Lançamento atualizado com sucesso!');
-      setTimeout(() => window.app.navigate('base-dados'), 1200);
+      mostrarMsg('msg-feedback', 'sucesso', 'Lançamento atualizado! Clique em "← Cancelar e voltar" para ver na base de dados.');
       return;
     }
 
