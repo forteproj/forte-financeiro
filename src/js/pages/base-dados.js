@@ -202,6 +202,9 @@ function _bindFiltros() {
     const btnConfPag = e.target.closest('.btn-confirmar-pag');
     if (btnConfPag) { _confirmarPagamento(btnConfPag.dataset.id); return; }
 
+    const btnRev = e.target.closest('.btn-reverter-pag');
+    if (btnRev) { _reverterPagamento(btnRev.dataset.id); return; }
+
     const btnAcao = e.target.closest('.btn-acao-atraso');
     if (btnAcao) { _togglePainel(btnAcao.dataset.id, btnAcao.dataset.tipo); return; }
 
@@ -331,6 +334,14 @@ function _renderTabela() {
          </button>`
       : '';
 
+    // Botão reverter confirmação (apenas realizados)
+    const btnReverter = (status === 'realizado' && podeEditar)
+      ? `<button class="btn-reverter-pag" data-id="${l.id}"
+           style="display:block;width:100%;margin-bottom:4px;padding:3px 4px;font-size:9px;font-weight:800;cursor:pointer;border-radius:2px;border:1px solid var(--mu);background:transparent;color:var(--mu)">
+           ↺ Reverter
+         </button>`
+      : '';
+
     // Botão reagendar/regularizar (apenas atrasados)
     const btnAcao = (status === 'atrasado' && podeEditar)
       ? `<button class="btn-acao-atraso" data-id="${l.id}" data-tipo="${l.tipo}"
@@ -369,6 +380,7 @@ function _renderTabela() {
       <td class="bd-contrato">${l.contrato || '—'}</td>
       <td style="text-align:center">
         ${btnConfirmar}
+        ${btnReverter}
         ${btnAcao}
         ${podeApagar ? `<button class="btn btn-del" data-del="${l.id}" title="Apagar">✕</button>` : ''}
       </td>
@@ -654,6 +666,52 @@ async function _confirmarPagamento(id) {
       alert('Erro ao confirmar: ' + err.message);
     }
   });
+}
+
+// ── Reverter confirmação de pagamento / recebimento ───────────────────────
+async function _reverterPagamento(id) {
+  const l = _lancamentos.find(x => x.id === id);
+  if (!l) return;
+
+  const isRec = l.tipo === 'Receita';
+  if (!confirm(`Reverter confirmação?\n\n${l.tipo} · ${fmtData(l.data)} · ${fmtMfull(Math.abs(l.valor || 0))}\n\nO status voltará para pendente.`)) return;
+
+  const dados = {
+    statusPagamento: 'pendente',
+    confirmadoPor:   null,
+    confirmadoEm:    null,
+    ...(isRec ? { dataRecebimento: null } : {}),
+  };
+
+  try {
+    await atualizarLancamento(id, dados);
+    Object.assign(l, dados);
+
+    // Reverte retenções vinculadas à mesma NF
+    if (isRec && l.nrDoc) {
+      const retencoes = _lancamentos.filter(
+        x => x.nrDoc === l.nrDoc && x.formaPgto === 'Retenção' && _calcStatus(x) === 'realizado'
+      );
+      for (const r of retencoes) {
+        await atualizarLancamento(r.id, dados);
+        Object.assign(r, dados);
+      }
+    }
+
+    // Desconta do valorRecebido no contrato
+    if (isRec && l.contrato) {
+      try {
+        const contrato = await buscarContratoPorNum(l.contrato);
+        if (contrato?.id) {
+          await atualizarContrato(contrato.id, { valorRecebido: increment(-(l.valor || 0)) });
+        }
+      } catch {}
+    }
+
+    _filtrar();
+  } catch (err) {
+    alert('Erro ao reverter: ' + err.message);
+  }
 }
 
 // ── Deletar ───────────────────────────────────────
