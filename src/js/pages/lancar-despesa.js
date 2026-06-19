@@ -31,6 +31,7 @@ const CAT_FORN_LABEL = {
 let _perfil       = null;
 let _contratos    = [];
 let _fornecedores = [];
+let _plano        = [];
 let _editId       = null;
 let _anexo        = null;
 
@@ -50,6 +51,7 @@ export async function mount(container, perfil) {
     ]);
     _contratos    = contratos;
     _fornecedores = fornecedores;
+    _plano        = plano;
     _preencherCategorias(plano);
     _preencherCCs(contratos);
     _preencherContratos(contratos);
@@ -151,6 +153,19 @@ function _html() {
         <div class="campo">
           <label>Informações adicionais</label>
           <input type="text" id="f-info" placeholder="Descrição complementar">
+        </div>
+      </div>
+      <div id="juros-row" style="margin-top:10px;display:flex;align-items:center;flex-wrap:wrap;gap:12px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--txs);cursor:pointer">
+          <input type="checkbox" id="toggle-juros" style="width:13px;height:13px">
+          Pago com juros / multa
+        </label>
+        <div id="juros-fields" style="display:none;align-items:center;gap:12px;flex-wrap:wrap">
+          <div class="campo" style="max-width:170px;margin:0">
+            <label>Valor dos juros (R$)</label>
+            <input type="text" id="f-juros-valor" placeholder="0,00">
+          </div>
+          <span style="font-size:11px;color:var(--mu);padding-top:18px">→ 5.1.002 — Juros / Encargos Financeiros (automático)</span>
         </div>
       </div>
     </div>
@@ -398,6 +413,10 @@ function _bindEventos() {
     if (e.target === document.getElementById('forn-overlay')) _fecharModalForn();
   });
 
+  // Juros
+  document.getElementById('toggle-juros').addEventListener('change', _onJuros);
+  document.getElementById('f-juros-valor').addEventListener('input', e => formatarValorInput(e.target));
+
   // Parcelamento
   document.getElementById('toggle-recorrente').addEventListener('change', _onRecorrente);
   document.getElementById('f-num-parcelas').addEventListener('input', () => _renderParcelas({ resetValores: true }));
@@ -495,11 +514,24 @@ async function _salvarFornecedor() {
 }
 
 // ── Parcelamento ──────────────────────────────────
+function _onJuros() {
+  const on = document.getElementById('toggle-juros').checked;
+  const fields = document.getElementById('juros-fields');
+  if (fields) fields.style.display = on ? 'flex' : 'none';
+}
+
 function _onRecorrente() {
   const on = document.getElementById('toggle-recorrente').checked;
   document.getElementById('recorrente-box').style.display = on ? '' : 'none';
   const elData = document.getElementById('f-data');
   if (elData) { elData.disabled = on; elData.style.opacity = on ? '0.4' : ''; }
+  // juros não se aplica a lançamentos parcelados
+  const jurosRow = document.getElementById('juros-row');
+  if (jurosRow) jurosRow.style.display = on ? 'none' : '';
+  if (on) {
+    const togJ = document.getElementById('toggle-juros');
+    if (togJ) { togJ.checked = false; _onJuros(); }
+  }
   if (on) _renderParcelas({ resetValores: true });
 }
 
@@ -680,9 +712,34 @@ async function _salvar() {
       });
     }
 
+    // Lançamento de juros (somente para não-parcelado)
+    let jurosValor = 0;
+    if (!isParcelado && document.getElementById('toggle-juros')?.checked) {
+      jurosValor = Math.abs(parseMoeda(document.getElementById('f-juros-valor').value));
+      if (jurosValor > 0) {
+        const jCat    = _plano.find(c => c.id === '5.1.002');
+        const jCatId  = jCat?.id  || '5.1.002';
+        const jCatDesc = jCat ? (jCat.id + ' — ' + jCat.desc) : '5.1.002 — Juros / Encargos Financeiros';
+        const jCc     = jCat?.cc  || 'CC-ADM-01-MATRIZ';
+        await salvarLancamento({
+          tipo: 'Gasto', data: datas[0],
+          mes: mesNome(datas[0]), ano: new Date(datas[0] + 'T12:00:00').getFullYear(),
+          dataLancamento, categoria: jCatId, categoriaDesc: jCatDesc,
+          cc: jCc, formaPgto: forma,
+          valor: -jurosValor, fornecedor,
+          info: `Juros/multa ref. ${nrDocBase}`,
+          nrDoc: nrDocBase, contrato,
+          statusPagamento: 'pendente',
+          lancadoPor: _perfil?.nome || 'Sistema',
+        });
+      }
+    }
+
     mostrarMsg('msg-feedback', 'sucesso', isParcelado
       ? `${n} parcelas lançadas · total ${fmtMfull(valorTotal)} · ${ccVal}`
-      : `Despesa lançada: ${catDesc.split('—').slice(1).join('—').trim() || catDesc} · ${fmtMfull(valorTotal)} · ${ccVal}`
+      : jurosValor > 0
+        ? `Despesa lançada · ${fmtMfull(valorTotal)} + juros ${fmtMfull(jurosValor)} → 5.1.002 · ${ccVal}`
+        : `Despesa lançada: ${catDesc.split('—').slice(1).join('—').trim() || catDesc} · ${fmtMfull(valorTotal)} · ${ccVal}`
     );
     _limpar();
     _renderHistorico();
@@ -719,6 +776,13 @@ function _validar() {
     mostrarMsg('msg-feedback', 'erro', 'Selecione o contrato vinculado ao centro de custo ' + cc + '.');
     return false;
   }
+  if (document.getElementById('toggle-juros')?.checked) {
+    if (!parseMoeda(document.getElementById('f-juros-valor').value)) {
+      mostrarMsg('msg-feedback', 'erro', 'Informe o valor dos juros / multa.');
+      document.getElementById('f-juros-valor').focus();
+      return false;
+    }
+  }
   return true;
 }
 
@@ -751,6 +815,12 @@ function _limpar() {
   document.getElementById('recorrente-box').style.display  = 'none';
   const elDataL = document.getElementById('f-data');
   if (elDataL) { elDataL.disabled = false; elDataL.style.opacity = ''; }
+  const togJ = document.getElementById('toggle-juros');
+  if (togJ) { togJ.checked = false; _onJuros(); }
+  const fJuros = document.getElementById('f-juros-valor');
+  if (fJuros) fJuros.value = '';
+  const jurosRow = document.getElementById('juros-row');
+  if (jurosRow) jurosRow.style.display = '';
   document.getElementById('f-num-parcelas').value          = '2';
   document.getElementById('f-frequencia').value            = '30';
   document.getElementById('f-data-primeira').value         = '';
