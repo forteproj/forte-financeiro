@@ -86,9 +86,9 @@ function _html() {
     <div class="page-sub">Saídas · Custos diretos · ADM · CAPEX · Retenções</div>
   </div>
 
-  <div id="edit-banner" style="display:none;background:#b45309;color:#fff;padding:12px 18px;border-radius:var(--raio);margin-bottom:14px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+  <div id="edit-banner" style="display:none;background:#6B46C1;color:#fff;padding:12px 18px;border-radius:var(--raio);margin-bottom:14px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
     <span style="font-size:13px;font-weight:900;letter-spacing:.3px">✏ MODO EDIÇÃO — Alterações serão salvas no lançamento existente</span>
-    <button onclick="window.app.navigate('base-dados')" style="background:#fff;color:#b45309;border:none;border-radius:4px;padding:6px 16px;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap">← Cancelar e voltar</button>
+    <button onclick="window.app.navigate('base-dados')" style="background:#fff;color:#6B46C1;border:none;border-radius:4px;padding:6px 16px;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap">← Cancelar e voltar</button>
   </div>
 
   ${msgHTML('msg-feedback')}
