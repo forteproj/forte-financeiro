@@ -128,7 +128,44 @@ function _html() {
       </div>
     </div>
 
-    <!-- 2. CLASSIFICAÇÃO -->
+    <!-- 2. PARCELAMENTO -->
+    <div class="form-section">
+      <div class="section-titulo">
+        Parcelamento / Recorrência
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--txs);cursor:pointer;margin-left:8px;letter-spacing:0;text-transform:none">
+          <input type="checkbox" id="toggle-recorrente" style="width:13px;height:13px">
+          Lançamento parcelado
+        </label>
+      </div>
+      <div id="recorrente-box" style="display:none">
+        <div style="display:flex;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:14px">
+          <div class="campo" style="max-width:160px;margin-bottom:0">
+            <label>Número de parcelas</label>
+            <input type="number" id="f-num-parcelas" value="2" min="2" max="120"
+              style="width:100%;padding:8px 10px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--raio);font-family:var(--fonte);font-size:13px;font-weight:700;color:var(--tx);outline:none">
+            <div class="campo-hint">Mín 2 · Máx 120</div>
+          </div>
+          <div class="campo" style="min-width:200px;margin-bottom:0">
+            <label>Frequência</label>
+            <select id="f-frequencia"
+              style="width:100%;padding:8px 10px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--raio);font-family:var(--fonte);font-size:13px;font-weight:700;color:var(--tx);outline:none">
+              <option value="30">Mensal (30 dias)</option>
+              <option value="15">Quinzenal (15 dias)</option>
+              <option value="7">Semanal (7 dias)</option>
+              <option value="0">Manual</option>
+            </select>
+          </div>
+          <div class="campo" id="campo-primeira-data" style="max-width:180px;margin-bottom:0">
+            <label>Data da 1ª parcela</label>
+            <input type="date" id="f-data-primeira"
+              style="width:100%;padding:8px 10px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--raio);font-family:var(--fonte);font-size:13px;font-weight:700;color:var(--tx);outline:none">
+          </div>
+        </div>
+        <div id="datas-parcelas"></div>
+      </div>
+    </div>
+
+    <!-- 3. CLASSIFICAÇÃO -->
     <div class="form-section">
       <div class="section-titulo">Classificação contábil</div>
       <div class="row row-2">
@@ -204,43 +241,6 @@ function _html() {
           <label>Informações adicionais</label>
           <input type="text" id="f-info" placeholder="Descrição complementar">
         </div>
-      </div>
-    </div>
-
-    <!-- 4. PARCELAMENTO -->
-    <div class="form-section">
-      <div class="section-titulo">
-        Parcelamento / Recorrência
-        <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--txs);cursor:pointer;margin-left:8px;letter-spacing:0;text-transform:none">
-          <input type="checkbox" id="toggle-recorrente" style="width:13px;height:13px">
-          Lançamento parcelado
-        </label>
-      </div>
-      <div id="recorrente-box" style="display:none">
-        <div style="display:flex;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:14px">
-          <div class="campo" style="max-width:160px;margin-bottom:0">
-            <label>Número de parcelas</label>
-            <input type="number" id="f-num-parcelas" value="2" min="2" max="120"
-              style="width:100%;padding:8px 10px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--raio);font-family:var(--fonte);font-size:13px;font-weight:700;color:var(--tx);outline:none">
-            <div class="campo-hint">Mín 2 · Máx 120</div>
-          </div>
-          <div class="campo" style="min-width:200px;margin-bottom:0">
-            <label>Frequência</label>
-            <select id="f-frequencia"
-              style="width:100%;padding:8px 10px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--raio);font-family:var(--fonte);font-size:13px;font-weight:700;color:var(--tx);outline:none">
-              <option value="30">Mensal (30 dias)</option>
-              <option value="15">Quinzenal (15 dias)</option>
-              <option value="7">Semanal (7 dias)</option>
-              <option value="0">Manual</option>
-            </select>
-          </div>
-          <div class="campo" id="campo-primeira-data" style="max-width:180px;margin-bottom:0">
-            <label>Data da 1ª parcela</label>
-            <input type="date" id="f-data-primeira"
-              style="width:100%;padding:8px 10px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--raio);font-family:var(--fonte);font-size:13px;font-weight:700;color:var(--tx);outline:none">
-          </div>
-        </div>
-        <div id="datas-parcelas"></div>
       </div>
     </div>
 
@@ -495,6 +495,8 @@ async function _salvarFornecedor() {
 function _onRecorrente() {
   const on = document.getElementById('toggle-recorrente').checked;
   document.getElementById('recorrente-box').style.display = on ? '' : 'none';
+  const elData = document.getElementById('f-data');
+  if (elData) { elData.disabled = on; elData.style.opacity = on ? '0.4' : ''; }
   if (on) _renderParcelas();
 }
 
@@ -728,6 +730,8 @@ function _limpar() {
   document.getElementById('regra-desempate').classList.remove('visivel');
   document.getElementById('toggle-recorrente').checked    = false;
   document.getElementById('recorrente-box').style.display  = 'none';
+  const elDataL = document.getElementById('f-data');
+  if (elDataL) { elDataL.disabled = false; elDataL.style.opacity = ''; }
   document.getElementById('f-num-parcelas').value          = '2';
   document.getElementById('f-frequencia').value            = '30';
   document.getElementById('f-data-primeira').value         = '';
