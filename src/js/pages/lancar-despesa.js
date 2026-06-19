@@ -415,7 +415,10 @@ function _bindEventos() {
 
   // Juros
   document.getElementById('toggle-juros').addEventListener('change', _onJuros);
-  document.getElementById('f-juros-valor').addEventListener('input', e => formatarValorInput(e.target));
+  document.getElementById('f-juros-valor').addEventListener('blur', e => {
+    const v = parseMoeda(e.target.value);
+    if (v > 0) e.target.value = v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
 
   // Parcelamento
   document.getElementById('toggle-recorrente').addEventListener('change', _onRecorrente);
@@ -642,9 +645,8 @@ async function _salvar() {
   const valorTotal = Math.abs(parseMoeda(valorStr));
   const n          = datas.length;
   const isJuros    = !isParcelado && (document.getElementById('toggle-juros')?.checked ?? false);
-  const jurosValorCapturado = isJuros
-    ? Math.abs(parseMoeda(document.getElementById('f-juros-valor')?.value || ''))
-    : 0;
+  const jurosRaw   = isJuros ? (document.getElementById('f-juros-valor')?.value || '').trim() : '';
+  const jurosValorCapturado = jurosRaw ? Math.abs(parseMoeda(jurosRaw)) : 0;
 
   _setLoading(true);
   try {
