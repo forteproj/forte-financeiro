@@ -663,7 +663,29 @@ async function _salvar() {
         editadoPor: _perfil?.nome || 'Sistema',
         editadoEm:  new Date().toISOString(),
       });
-      mostrarMsg('msg-feedback', 'sucesso', 'Lançamento atualizado! Clique em "← Cancelar e voltar" para ver na base de dados.');
+      if (isJuros && jurosValorCapturado > 0) {
+        const jCat     = _plano.find(c => c.id === '5.1.002');
+        const jCatId   = jCat?.id   || '5.1.002';
+        const jCatDesc = jCat ? (jCat.id + ' — ' + jCat.desc) : '5.1.002 — Juros / Encargos Financeiros';
+        try {
+          await salvarLancamento({
+            tipo: 'Gasto', data, mes: mesNome(data),
+            ano: new Date(data + 'T12:00:00').getFullYear(),
+            dataLancamento, categoria: jCatId, categoriaDesc: jCatDesc,
+            cc: 'CC-ADM-01-MATRIZ', formaPgto: forma,
+            valor: -jurosValorCapturado, fornecedor,
+            info: `Juros/multa ref. ${nrDocBase}`,
+            nrDoc: nrDocBase, contrato,
+            statusPagamento: 'pendente',
+            lancadoPor: _perfil?.nome || 'Sistema',
+          });
+          mostrarMsg('msg-feedback', 'sucesso', `Lançamento atualizado + juros ${fmtMfull(jurosValorCapturado)} → 5.1.002 em CC-ADM-01-MATRIZ. Clique em "← Cancelar e voltar".`);
+        } catch (jErr) {
+          mostrarMsg('msg-feedback', 'erro', `Lançamento atualizado, mas falha ao salvar juros: ${jErr.message}`);
+        }
+      } else {
+        mostrarMsg('msg-feedback', 'sucesso', 'Lançamento atualizado! Clique em "← Cancelar e voltar" para ver na base de dados.');
+      }
       return;
     }
 
@@ -746,7 +768,7 @@ async function _salvar() {
       ? `${n} parcelas lançadas · total ${fmtMfull(valorTotal)} · ${ccVal}`
       : isJuros && jurosValorCapturado > 0
         ? `Despesa lançada · ${fmtMfull(valorTotal)} em ${ccVal} + juros ${fmtMfull(jurosValorCapturado)} → 5.1.002 em CC-ADM-01-MATRIZ`
-        : `Despesa lançada: ${catDesc.split('—').slice(1).join('—').trim() || catDesc} · ${fmtMfull(valorTotal)} · ${ccVal} [juros: marcado=${isJuros}, valor="${jurosRaw}", parsedR$=${jurosValorCapturado}]`
+        : `Despesa lançada: ${catDesc.split('—').slice(1).join('—').trim() || catDesc} · ${fmtMfull(valorTotal)} · ${ccVal}`
     );
     _limpar();
     _renderHistorico();
