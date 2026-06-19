@@ -101,6 +101,16 @@ function _html() {
           <input type="date" id="f-data">
         </div>
       </div>
+      <div id="periodo-exec-row" class="row row-2" style="margin-top:12px;display:none">
+        <div class="campo">
+          <label>Início da execução</label>
+          <input type="date" id="f-periodo-inicio">
+        </div>
+        <div class="campo">
+          <label>Fim da execução</label>
+          <input type="date" id="f-periodo-fim">
+        </div>
+      </div>
       <div class="row row-3" style="margin-top:12px">
         <div class="campo">
           <label>Nº NFS-e / Documento <span style="color:var(--vermelho)">*</span></label>
@@ -317,6 +327,7 @@ function _bindEventos() {
   );
   document.getElementById('btn-salvar').addEventListener('click', _salvar);
   document.getElementById('btn-limpar').addEventListener('click', _limpar);
+  _onTipoReceita();
 }
 
 function _onContrato() {
@@ -370,7 +381,9 @@ function _onContrato() {
 }
 
 function _onTipoReceita() {
-  // Seção de retenções sempre visível — usuário decide se aplica via toggle
+  const tipo = document.getElementById('f-tipo-receita').value;
+  const row  = document.getElementById('periodo-exec-row');
+  if (row) row.style.display = tipo === 'medicao' ? '' : 'none';
 }
 
 function _toggleRetencoes() {
@@ -423,7 +436,10 @@ async function _salvar() {
     const bruto   = parseMoeda(document.getElementById('f-valor').value);
     const cc      = document.getElementById('f-cc').value;
     const contrato = document.getElementById('f-contrato').value;
-    const nrDoc   = document.getElementById('f-doc').value.trim();
+    const nrDoc         = document.getElementById('f-doc').value.trim();
+    const periodoInicio = document.getElementById('f-periodo-inicio').value || null;
+    const periodoFim    = document.getElementById('f-periodo-fim').value    || null;
+    const tipoReceita   = document.getElementById('f-tipo-receita').value;
 
     // Modo edição
     if (_editId) {
@@ -431,6 +447,7 @@ async function _salvar() {
         tipo: 'Receita',
         data, mes: mesNome(data), ano: d.getFullYear(),
         dataLancamento,
+        tipoReceita, periodoInicio, periodoFim,
         categoria:     '1.1.001',
         categoriaDesc: '1.1.001 — Receita de Serviços (NFS-e)',
         cc, formaPgto: document.getElementById('f-forma').value,
@@ -498,6 +515,7 @@ async function _salvar() {
       tipo:          'Receita',
       data, mes: mesNome(data), ano: d.getFullYear(),
       dataLancamento,
+      tipoReceita, periodoInicio, periodoFim,
       categoria:      '1.1.001',
       categoriaDesc:  '1.1.001 — Receita de Serviços (NFS-e)',
       cc, formaPgto: document.getElementById('f-forma').value,
@@ -603,8 +621,11 @@ function _limpar() {
   _setHoje();
   ['f-doc', 'f-referencia', 'f-info', 'f-valor'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('f-forma').value        = '';
-  document.getElementById('f-tipo-receita').value = 'medicao';
-  document.getElementById('f-contrato').value     = '';
+  document.getElementById('f-tipo-receita').value  = 'medicao';
+  document.getElementById('f-periodo-inicio').value = '';
+  document.getElementById('f-periodo-fim').value    = '';
+  _onTipoReceita();
+  document.getElementById('f-contrato').value       = '';
   document.getElementById('f-cc').value           = '';
   document.getElementById('contrato-info').classList.remove('visivel');
   _contratoSelecionado = null;
@@ -626,11 +647,15 @@ async function _carregarParaEdicao() {
     if (!l) { mostrarMsg('msg-feedback', 'erro', 'Lançamento não encontrado.'); return; }
 
     document.getElementById('edit-banner').style.display = 'flex';
-    document.getElementById('f-data-lancamento').value = l.dataLancamento || new Date().toISOString().split('T')[0];
-    document.getElementById('f-data').value        = l.data || '';
-    document.getElementById('f-doc').value         = l.nrDoc || '';
-    document.getElementById('f-forma').value       = l.formaPgto || '';
-    document.getElementById('f-referencia').value  = l.info || '';
+    document.getElementById('f-data-lancamento').value  = l.dataLancamento || new Date().toISOString().split('T')[0];
+    document.getElementById('f-data').value             = l.data           || '';
+    document.getElementById('f-doc').value              = l.nrDoc          || '';
+    document.getElementById('f-forma').value            = l.formaPgto      || '';
+    document.getElementById('f-tipo-receita').value     = l.tipoReceita    || 'medicao';
+    document.getElementById('f-periodo-inicio').value   = l.periodoInicio  || '';
+    document.getElementById('f-periodo-fim').value      = l.periodoFim     || '';
+    _onTipoReceita();
+    document.getElementById('f-referencia').value       = l.info           || '';
 
     const valorEl = document.getElementById('f-valor');
     valorEl.value = Math.abs(l.valor || 0).toFixed(2).replace('.', ',');
