@@ -720,7 +720,7 @@ async function _salvar() {
         const jCat    = _plano.find(c => c.id === '5.1.002');
         const jCatId  = jCat?.id  || '5.1.002';
         const jCatDesc = jCat ? (jCat.id + ' — ' + jCat.desc) : '5.1.002 — Juros / Encargos Financeiros';
-        const jCc     = jCat?.cc  || 'CC-ADM-01-MATRIZ';
+        const jCc     = 'CC-ADM-01-MATRIZ';
         await salvarLancamento({
           tipo: 'Gasto', data: datas[0],
           mes: mesNome(datas[0]), ano: new Date(datas[0] + 'T12:00:00').getFullYear(),
