@@ -366,8 +366,8 @@ function _preencherCCs(contratos) {
     { valor: 'CC-ADM-04-BBC',      label: 'CC-ADM-04-BBC' },
     { valor: 'CC-ADM-05-MSX',      label: 'CC-ADM-05-MSX' },
     { valor: 'CC-ADM-06-ECCOFORTE', label: 'CC-ADM-06-ECCOFORTE' },
-    { valor: 'CC-MAN-FROTA',        label: 'CC-MAN-FROTA' },
-    { valor: 'CC-MAN-EQUIPAMENTOS', label: 'CC-MAN-EQUIPAMENTOS' },
+    { valor: 'CC-MANUTENÇÃO FROTA',        label: 'CC-MANUTENÇÃO FROTA' },
+    { valor: 'CC-MANUTENÇÃO EQUIPAMENTOS', label: 'CC-MANUTENÇÃO EQUIPAMENTOS' },
   ].forEach(f => {
     const o = document.createElement('option');
     o.value = f.valor; o.textContent = f.label;
@@ -463,10 +463,10 @@ function _onCC() {
 
   regra.classList.toggle('visivel', cc === 'CC-ADM-01-MATRIZ');
 
-  const isManCC = ['CC-MAN-FROTA', 'CC-MAN-EQUIPAMENTOS'].includes(cc);
+  const isManCC = ['CC-MANUTENÇÃO FROTA', 'CC-MANUTENÇÃO EQUIPAMENTOS'].includes(cc);
   placaRow.style.display = isManCC ? '' : 'none';
   if (isManCC) {
-    if (cc === 'CC-MAN-FROTA') {
+    if (cc === 'CC-MANUTENÇÃO FROTA') {
       placaEl.placeholder = 'ABC-1234';
       placaHint.textContent = 'Informe a placa do veículo — obrigatório para relatórios por frota';
     } else {
@@ -488,7 +488,7 @@ function _onCC() {
     }
   } else {
     info.classList.remove('visivel');
-    if (['CC-ADM-01-MATRIZ', 'CC-ADM-02-FOLHA DE PAGAMENTO', 'CC-ADM-03-INVESTIMENTOS', 'CC-ADM-04-BBC', 'CC-ADM-05-MSX', 'CC-ADM-06-ECCOFORTE', 'CC-MAN-FROTA', 'CC-MAN-EQUIPAMENTOS'].includes(cc)) {
+    if (['CC-ADM-01-MATRIZ', 'CC-ADM-02-FOLHA DE PAGAMENTO', 'CC-ADM-03-INVESTIMENTOS', 'CC-ADM-04-BBC', 'CC-ADM-05-MSX', 'CC-ADM-06-ECCOFORTE', 'CC-MANUTENÇÃO FROTA', 'CC-MANUTENÇÃO EQUIPAMENTOS'].includes(cc)) {
       document.getElementById('f-contrato').value = '';
     }
   }
@@ -834,8 +834,8 @@ function _validar() {
     mostrarMsg('msg-feedback', 'erro', 'Selecione o contrato vinculado ao centro de custo ' + cc + '.');
     return false;
   }
-  if (['CC-MAN-FROTA', 'CC-MAN-EQUIPAMENTOS'].includes(cc) && !document.getElementById('f-placa').value.trim()) {
-    const label = cc === 'CC-MAN-FROTA' ? 'a placa do veículo' : 'a identificação do equipamento';
+  if (['CC-MANUTENÇÃO FROTA', 'CC-MANUTENÇÃO EQUIPAMENTOS'].includes(cc) && !document.getElementById('f-placa').value.trim()) {
+    const label = cc === 'CC-MANUTENÇÃO FROTA' ? 'a placa do veículo' : 'a identificação do equipamento';
     mostrarMsg('msg-feedback', 'erro', `Informe ${label} para lançamentos em ${cc}.`);
     document.getElementById('f-placa').classList.add('erro');
     setTimeout(() => document.getElementById('f-placa').classList.remove('erro'), 2500);
