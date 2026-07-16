@@ -250,6 +250,14 @@ function _html() {
         Se for exclusivo de uma obra → altere para o <code>CC-CLI-xxx</code> correspondente.</p>
       </div>
 
+      <div id="placa-row" style="display:none;margin-top:8px">
+        <div class="campo">
+          <label>Placa / Identificação <span style="color:var(--vermelho)">*</span></label>
+          <input type="text" id="f-placa" placeholder="ABC-1234" style="text-transform:uppercase">
+          <div class="campo-hint" id="placa-hint">Obrigatório para lançamentos de manutenção de frota</div>
+        </div>
+      </div>
+
       <div class="campo" style="margin-top:4px">
         <label>Contrato vinculado</label>
         <select id="f-contrato">
@@ -357,6 +365,8 @@ function _preencherCCs(contratos) {
     { valor: 'CC-ADM-04-BBC',      label: 'CC-ADM-04-BBC' },
     { valor: 'CC-ADM-05-MSX',      label: 'CC-ADM-05-MSX' },
     { valor: 'CC-ADM-06-ECCOFORTE', label: 'CC-ADM-06-ECCOFORTE' },
+    { valor: 'CC-MAN-FROTA',        label: 'CC-MAN-FROTA' },
+    { valor: 'CC-MAN-EQUIPAMENTOS', label: 'CC-MAN-EQUIPAMENTOS' },
   ].forEach(f => {
     const o = document.createElement('option');
     o.value = f.valor; o.textContent = f.label;
@@ -443,11 +453,26 @@ function _onCategoria() {
 }
 
 function _onCC() {
-  const cc    = document.getElementById('f-cc').value;
-  const info  = document.getElementById('cc-info');
-  const regra = document.getElementById('regra-desempate');
+  const cc       = document.getElementById('f-cc').value;
+  const info     = document.getElementById('cc-info');
+  const regra    = document.getElementById('regra-desempate');
+  const placaRow = document.getElementById('placa-row');
+  const placaEl  = document.getElementById('f-placa');
+  const placaHint= document.getElementById('placa-hint');
 
   regra.classList.toggle('visivel', cc === 'CC-ADM-01-MATRIZ');
+
+  const isManCC = ['CC-MAN-FROTA', 'CC-MAN-EQUIPAMENTOS'].includes(cc);
+  placaRow.style.display = isManCC ? '' : 'none';
+  if (isManCC) {
+    if (cc === 'CC-MAN-FROTA') {
+      placaEl.placeholder = 'ABC-1234';
+      placaHint.textContent = 'Informe a placa do veículo — obrigatório para relatórios por frota';
+    } else {
+      placaEl.placeholder = 'Nº série / identificação';
+      placaHint.textContent = 'Informe o nº de série ou identificação do equipamento';
+    }
+  }
 
   if (cc.startsWith('CC-CLI-')) {
     const contrato = _contratos.find(c => c.ccCodigo === cc);
@@ -462,7 +487,7 @@ function _onCC() {
     }
   } else {
     info.classList.remove('visivel');
-    if (['CC-ADM-01-MATRIZ', 'CC-ADM-02-FOLHA DE PAGAMENTO', 'CC-ADM-03-INVESTIMENTOS', 'CC-ADM-04-BBC', 'CC-ADM-05-MSX', 'CC-ADM-06-ECCOFORTE'].includes(cc)) {
+    if (['CC-ADM-01-MATRIZ', 'CC-ADM-02-FOLHA DE PAGAMENTO', 'CC-ADM-03-INVESTIMENTOS', 'CC-ADM-04-BBC', 'CC-ADM-05-MSX', 'CC-ADM-06-ECCOFORTE', 'CC-MAN-FROTA', 'CC-MAN-EQUIPAMENTOS'].includes(cc)) {
       document.getElementById('f-contrato').value = '';
     }
   }
@@ -642,6 +667,7 @@ async function _salvar() {
   const fornecedor= document.getElementById('f-fornecedor').value;
   const infoBase  = document.getElementById('f-info').value.trim();
   const contrato  = document.getElementById('f-contrato').value;
+  const placa     = document.getElementById('f-placa').value.trim().toUpperCase() || null;
   const valorTotal = Math.abs(parseMoeda(valorStr));
   const n          = datas.length;
   const isJuros    = !isParcelado && (document.getElementById('toggle-juros')?.checked ?? false);
@@ -659,6 +685,7 @@ async function _salvar() {
         categoria: catId, categoriaDesc: catDesc,
         cc: ccVal, formaPgto: forma,
         valor: -valorTotal, fornecedor, info: infoBase, nrDoc: nrDocBase, contrato,
+        ...(placa ? { placa } : { placa: null }),
         statusPagamento: 'pendente',
         editadoPor: _perfil?.nome || 'Sistema',
         editadoEm:  new Date().toISOString(),
@@ -733,6 +760,7 @@ async function _salvar() {
         info,
         nrDoc,
         contrato,
+        ...(placa ? { placa } : {}),
         statusPagamento: 'pendente',
         lancadoPor:    _perfil?.nome || 'Sistema',
         ...(anexoUrl ? { anexoUrl, anexoNome } : {}),
@@ -805,6 +833,14 @@ function _validar() {
     mostrarMsg('msg-feedback', 'erro', 'Selecione o contrato vinculado ao centro de custo ' + cc + '.');
     return false;
   }
+  if (['CC-MAN-FROTA', 'CC-MAN-EQUIPAMENTOS'].includes(cc) && !document.getElementById('f-placa').value.trim()) {
+    const label = cc === 'CC-MAN-FROTA' ? 'a placa do veículo' : 'a identificação do equipamento';
+    mostrarMsg('msg-feedback', 'erro', `Informe ${label} para lançamentos em ${cc}.`);
+    document.getElementById('f-placa').classList.add('erro');
+    setTimeout(() => document.getElementById('f-placa').classList.remove('erro'), 2500);
+    document.getElementById('f-placa').focus();
+    return false;
+  }
   if (document.getElementById('toggle-juros')?.checked) {
     if (!parseMoeda(document.getElementById('f-juros-valor').value)) {
       mostrarMsg('msg-feedback', 'erro', 'Informe o valor dos juros / multa.');
@@ -838,6 +874,8 @@ function _limpar() {
   document.getElementById('f-categoria').value   = '';
   document.getElementById('f-cc').value          = '';
   document.getElementById('f-contrato').value    = '';
+  document.getElementById('f-placa').value       = '';
+  document.getElementById('placa-row').style.display = 'none';
   document.getElementById('cc-info').classList.remove('visivel');
   document.getElementById('regra-desempate').classList.remove('visivel');
   document.getElementById('toggle-recorrente').checked    = false;
@@ -891,6 +929,7 @@ async function _carregarParaEdicao() {
 
     _onCC();
     document.getElementById('f-contrato').value = l.contrato || '';
+    document.getElementById('f-placa').value    = l.placa    || '';
 
     if (l.anexoUrl) showExistingAnexo('des', l.anexoUrl, l.anexoNome);
     // Oculta parcelamento — não editável
