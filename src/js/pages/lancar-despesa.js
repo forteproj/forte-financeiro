@@ -358,6 +358,7 @@ function _preencherCategorias(plano) {
 
 function _preencherCCs(contratos) {
   const sel = document.getElementById('f-cc');
+  sel.innerHTML = '<option value="">Selecione o CC...</option>';
   [
     { valor: 'CC-ADM-01-MATRIZ',             label: 'CC-ADM-01-MATRIZ' },
     { valor: 'CC-ADM-02-FOLHA DE PAGAMENTO', label: 'CC-ADM-02-FOLHA DE PAGAMENTO' },
