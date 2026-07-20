@@ -209,61 +209,89 @@ function _html() {
 
     <!-- 3. CLASSIFICAÇÃO -->
     <div class="form-section">
-      <div class="section-titulo">Classificação contábil</div>
-      <div class="row row-2">
-        <div class="campo">
-          <label>Categoria — Plano de Contas <span style="color:var(--vermelho)">*</span></label>
-          <select id="f-categoria">
-            <option value="">Selecione a categoria...</option>
+      <div class="section-titulo">
+        Classificação contábil
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--txs);cursor:pointer;margin-left:8px;letter-spacing:0;text-transform:none">
+          <input type="checkbox" id="toggle-rateio" style="width:13px;height:13px">
+          Múltiplos planos de conta
+        </label>
+      </div>
+
+      <!-- Modo simples (padrão) -->
+      <div id="classif-simples">
+        <div class="row row-2">
+          <div class="campo">
+            <label>Categoria — Plano de Contas <span style="color:var(--vermelho)">*</span></label>
+            <select id="f-categoria">
+              <option value="">Selecione a categoria...</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Centro de Custo <span style="color:var(--vermelho)">*</span></label>
+            <select id="f-cc">
+              <option value="">Selecione o CC...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="cc-info" id="cc-info">
+          <div class="cc-info-item">
+            <div class="cc-info-label">Contrato</div>
+            <div class="cc-info-valor" id="cc-info-contrato">—</div>
+          </div>
+          <div class="cc-info-item">
+            <div class="cc-info-label">Cliente</div>
+            <div class="cc-info-valor" id="cc-info-cliente">—</div>
+          </div>
+          <div class="cc-info-item">
+            <div class="cc-info-label">Saldo disponível</div>
+            <div class="cc-info-valor" id="cc-info-saldo">—</div>
+          </div>
+          <div class="cc-info-item">
+            <div class="cc-info-label">Vigência</div>
+            <div class="cc-info-valor" id="cc-info-vigencia">—</div>
+          </div>
+        </div>
+
+        <div class="regra-box" id="regra-desempate">
+          <div class="regra-box-titulo">⚠ Regra de desempate</div>
+          <p>Você selecionou <code>CC-ADM-01-MATRIZ</code>. Confirme: esse gasto é da <strong>sede/escritório central</strong>?<br>
+          Se for exclusivo de uma obra → altere para o <code>CC-CLI-xxx</code> correspondente.</p>
+        </div>
+
+        <div id="placa-row" style="display:none;margin-top:8px">
+          <div class="campo">
+            <label>Placa / Identificação <span style="color:var(--vermelho)">*</span></label>
+            <input type="text" id="f-placa" placeholder="ABC-1234" style="text-transform:uppercase">
+            <div class="campo-hint" id="placa-hint">Obrigatório para lançamentos de manutenção de frota</div>
+          </div>
+        </div>
+
+        <div class="campo" style="margin-top:4px">
+          <label>Contrato vinculado</label>
+          <select id="f-contrato">
+            <option value="">— sem vínculo de contrato —</option>
           </select>
-        </div>
-        <div class="campo">
-          <label>Centro de Custo <span style="color:var(--vermelho)">*</span></label>
-          <select id="f-cc">
-            <option value="">Selecione o CC...</option>
-          </select>
+          <div class="campo-hint">Obrigatório quando CC for CC-CLI-xxx</div>
         </div>
       </div>
 
-      <div class="cc-info" id="cc-info">
-        <div class="cc-info-item">
-          <div class="cc-info-label">Contrato</div>
-          <div class="cc-info-valor" id="cc-info-contrato">—</div>
+      <!-- Modo rateio -->
+      <div id="rateio-box" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr 130px 28px;gap:6px;margin-bottom:4px;padding:0 2px">
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--mu)">Categoria</span>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--mu)">Centro de Custo</span>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--mu);text-align:right">Valor (R$)</span>
+          <span></span>
         </div>
-        <div class="cc-info-item">
-          <div class="cc-info-label">Cliente</div>
-          <div class="cc-info-valor" id="cc-info-cliente">—</div>
+        <div id="rateio-linhas"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;flex-wrap:wrap;gap:8px">
+          <button type="button" id="btn-add-rateio"
+            style="font-size:11px;font-weight:800;color:var(--amb);background:none;border:1px dashed var(--amb);border-radius:var(--raio);padding:5px 12px;cursor:pointer">
+            + Adicionar linha
+          </button>
+          <div id="rateio-resumo" style="font-size:12px;font-weight:700;color:var(--mu)">Total alocado: R$ 0,00</div>
         </div>
-        <div class="cc-info-item">
-          <div class="cc-info-label">Saldo disponível</div>
-          <div class="cc-info-valor" id="cc-info-saldo">—</div>
-        </div>
-        <div class="cc-info-item">
-          <div class="cc-info-label">Vigência</div>
-          <div class="cc-info-valor" id="cc-info-vigencia">—</div>
-        </div>
-      </div>
-
-      <div class="regra-box" id="regra-desempate">
-        <div class="regra-box-titulo">⚠ Regra de desempate</div>
-        <p>Você selecionou <code>CC-ADM-01-MATRIZ</code>. Confirme: esse gasto é da <strong>sede/escritório central</strong>?<br>
-        Se for exclusivo de uma obra → altere para o <code>CC-CLI-xxx</code> correspondente.</p>
-      </div>
-
-      <div id="placa-row" style="display:none;margin-top:8px">
-        <div class="campo">
-          <label>Placa / Identificação <span style="color:var(--vermelho)">*</span></label>
-          <input type="text" id="f-placa" placeholder="ABC-1234" style="text-transform:uppercase">
-          <div class="campo-hint" id="placa-hint">Obrigatório para lançamentos de manutenção de frota</div>
-        </div>
-      </div>
-
-      <div class="campo" style="margin-top:4px">
-        <label>Contrato vinculado</label>
-        <select id="f-contrato">
-          <option value="">— sem vínculo de contrato —</option>
-        </select>
-        <div class="campo-hint">Obrigatório quando CC for CC-CLI-xxx</div>
       </div>
     </div>
 
@@ -384,6 +412,95 @@ function _preencherCCs(contratos) {
   sel.appendChild(og);
 }
 
+// ── Rateio ────────────────────────────────────────
+function _buildRateioSelectCat(sel) {
+  const src = document.getElementById('f-categoria');
+  sel.innerHTML = '<option value="">Categoria...</option>';
+  Array.from(src.options).forEach(o => {
+    if (!o.value) return;
+    const c = document.createElement('option');
+    c.value = o.value; c.textContent = o.textContent; c.dataset.cc = o.dataset.cc || '';
+    sel.appendChild(c);
+  });
+}
+
+function _buildRateioSelectCC(sel) {
+  const src = document.getElementById('f-cc');
+  sel.innerHTML = '<option value="">CC...</option>';
+  Array.from(src.options).forEach(o => {
+    if (!o.value) return;
+    const c = document.createElement('option');
+    c.value = o.value; c.textContent = o.textContent;
+    sel.appendChild(c);
+  });
+}
+
+function _atualizarRateioTotal() {
+  const total   = Math.abs(parseMoeda(document.getElementById('f-valor').value)) || 0;
+  const alocado = Array.from(document.querySelectorAll('.r-val'))
+    .reduce((s, el) => s + (Math.abs(parseMoeda(el.value)) || 0), 0);
+  const diff    = total - alocado;
+  const ok      = Math.abs(diff) < 0.01;
+  const resumo  = document.getElementById('rateio-resumo');
+  if (!resumo) return;
+  resumo.innerHTML = ok
+    ? `<span style="color:var(--verde)">✓ Total alocado: ${fmtMfull(alocado)}</span>`
+    : `<span style="color:${diff > 0 ? 'var(--amb)' : 'var(--vermelho)'}">Alocado ${fmtMfull(alocado)} de ${fmtMfull(total)} · falta ${fmtMfull(Math.abs(diff))}</span>`;
+}
+
+function _addRateioLinha() {
+  const container = document.getElementById('rateio-linhas');
+  const linha = document.createElement('div');
+  linha.className = 'rateio-linha';
+  linha.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 130px 28px;gap:6px;margin-bottom:6px;align-items:center';
+
+  const stSel = 'width:100%;padding:7px 8px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--raio);font-family:var(--fonte);font-size:12px;color:var(--tx);outline:none';
+  const selCat = document.createElement('select'); selCat.className = 'r-cat'; selCat.style.cssText = stSel;
+  const selCC  = document.createElement('select'); selCC.className  = 'r-cc';  selCC.style.cssText = stSel;
+  _buildRateioSelectCat(selCat);
+  _buildRateioSelectCC(selCC);
+
+  const inpVal = document.createElement('input');
+  inpVal.type = 'text'; inpVal.className = 'r-val'; inpVal.placeholder = '0,00';
+  inpVal.style.cssText = 'width:100%;padding:7px 8px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--raio);font-family:var(--fonte);font-size:12px;font-weight:700;color:var(--tx);outline:none;text-align:right;box-sizing:border-box';
+  inpVal.addEventListener('input', () => { formatarValorInput(inpVal); _atualizarRateioTotal(); });
+
+  const btnDel = document.createElement('button');
+  btnDel.type = 'button'; btnDel.textContent = '✕';
+  btnDel.style.cssText = 'background:none;border:1px solid var(--bd);border-radius:var(--raio);color:var(--mu);font-size:11px;cursor:pointer;padding:5px 7px;line-height:1';
+  btnDel.addEventListener('click', () => { linha.remove(); _atualizarRateioTotal(); });
+
+  selCC.addEventListener('change', () => {
+    const cc = selCC.value;
+    const contrato = cc.startsWith('CC-CLI-') ? (_contratos.find(c => c.ccCodigo === cc)?.numContrato || '') : '';
+    selCC.dataset.contrato = contrato;
+  });
+
+  linha.appendChild(selCat);
+  linha.appendChild(selCC);
+  linha.appendChild(inpVal);
+  linha.appendChild(btnDel);
+  container.appendChild(linha);
+}
+
+function _onToggleRateio() {
+  const ativo = document.getElementById('toggle-rateio').checked;
+  document.getElementById('classif-simples').style.display = ativo ? 'none' : '';
+  document.getElementById('rateio-box').style.display      = ativo ? ''     : 'none';
+  const togRec = document.getElementById('toggle-recorrente');
+  if (ativo) {
+    if (togRec.checked) { togRec.checked = false; _onRecorrente(); }
+    togRec.disabled = true;
+    if (!document.getElementById('rateio-linhas').children.length) {
+      _addRateioLinha(); _addRateioLinha();
+    }
+    _atualizarRateioTotal();
+  } else {
+    togRec.disabled = false;
+    document.getElementById('rateio-linhas').innerHTML = '';
+  }
+}
+
 function _preencherContratos(contratos) {
   const sel = document.getElementById('f-contrato');
   contratos.filter(c => c.status !== 'encerrado').forEach(c => {
@@ -410,8 +527,10 @@ function _preencherFornecedores() {
 function _bindEventos() {
   document.getElementById('f-categoria').addEventListener('change', _onCategoria);
   document.getElementById('f-cc').addEventListener('change', _onCC);
+  document.getElementById('toggle-rateio').addEventListener('change', _onToggleRateio);
+  document.getElementById('btn-add-rateio').addEventListener('click', _addRateioLinha);
 
-  document.getElementById('f-valor').addEventListener('input', e => formatarValorInput(e.target));
+  document.getElementById('f-valor').addEventListener('input', e => { formatarValorInput(e.target); _atualizarRateioTotal(); });
   document.getElementById('btn-salvar').addEventListener('click', _salvar);
   document.getElementById('btn-limpar').addEventListener('click', () => { esconderMsg('msg-feedback'); _limpar(); });
 
@@ -675,8 +794,52 @@ async function _salvar() {
   const jurosRaw   = isJuros ? (document.getElementById('f-juros-valor')?.value || '').trim() : '';
   const jurosValorCapturado = jurosRaw ? Math.abs(parseMoeda(jurosRaw)) : 0;
 
+  const isRateio = document.getElementById('toggle-rateio').checked;
+
   _setLoading(true);
   try {
+    // ── Rateio: salva um lançamento por linha ──────
+    if (isRateio && !_editId) {
+      const data = datas[0];
+      const d    = new Date(data + 'T12:00:00');
+      let anexoUrl = null, anexoNome = null;
+      const anexoFile = _anexo?.getFile();
+      if (anexoFile) {
+        try {
+          anexoUrl  = await uploadAnexo('despesas', 'rateio', nrDocBase, anexoFile);
+          anexoNome = anexoFile.name;
+        } catch (err) {
+          mostrarMsg('msg-feedback', 'erro', 'Erro ao enviar anexo: ' + err.message);
+          _setLoading(false); return;
+        }
+      }
+      const linhas = document.querySelectorAll('#rateio-linhas .rateio-linha');
+      let idx = 0;
+      for (const linha of linhas) {
+        idx++;
+        const selCatR  = linha.querySelector('.r-cat');
+        const selCCR   = linha.querySelector('.r-cc');
+        const inpValR  = linha.querySelector('.r-val');
+        const rCatId   = selCatR.value;
+        const rCatDesc = selCatR.options[selCatR.selectedIndex]?.text || '';
+        const rCC      = selCCR.value;
+        const rContrat = selCCR.dataset.contrato || '';
+        const rValor   = Math.abs(parseMoeda(inpValR.value));
+        await salvarLancamento({
+          tipo: 'Gasto', data, mes: mesNome(data), ano: d.getFullYear(),
+          dataLancamento, categoria: rCatId, categoriaDesc: rCatDesc,
+          cc: rCC, formaPgto: forma, valor: -rValor, fornecedor,
+          info: infoBase ? `${infoBase} · item ${idx}/${linhas.length}` : `Rateio item ${idx}/${linhas.length}`,
+          nrDoc: nrDocBase, contrato: rContrat,
+          statusPagamento: 'pendente', lancadoPor: _perfil?.nome || 'Sistema',
+          ...(anexoUrl ? { anexoUrl, anexoNome } : {}),
+        });
+      }
+      mostrarMsg('msg-feedback', 'sucesso', `${linhas.length} lançamentos de rateio salvos · total ${fmtMfull(valorTotal)} · doc ${nrDocBase}`);
+      _limpar(); _renderHistorico(); _atualizarContador();
+      return;
+    }
+
     if (_editId) {
       const data = datas[0];
       const d    = new Date(data + 'T12:00:00');
@@ -811,15 +974,20 @@ async function _salvar() {
 
 function _validar() {
   const isParcelado = document.getElementById('toggle-recorrente').checked;
-  const campos = [
+  const isRateio    = document.getElementById('toggle-rateio').checked;
+
+  // Campos comuns (cabeçalho) — sempre obrigatórios
+  const camposBase = [
     ...(!isParcelado ? [{ id: 'f-data', label: 'Data' }] : []),
-    { id: 'f-doc',       label: 'Nº Documento' },
-    { id: 'f-forma',     label: 'Forma de pagamento' },
-    { id: 'f-categoria', label: 'Categoria' },
-    { id: 'f-cc',        label: 'Centro de Custo' },
-    { id: 'f-valor',     label: 'Valor' },
+    { id: 'f-doc',   label: 'Nº Documento' },
+    { id: 'f-forma', label: 'Forma de pagamento' },
+    { id: 'f-valor', label: 'Valor' },
+    ...(!isRateio ? [
+      { id: 'f-categoria', label: 'Categoria' },
+      { id: 'f-cc',        label: 'Centro de Custo' },
+    ] : []),
   ];
-  for (const c of campos) {
+  for (const c of camposBase) {
     const el = document.getElementById(c.id);
     if (!el.value.trim()) {
       el.classList.add('erro');
@@ -829,6 +997,30 @@ function _validar() {
       return false;
     }
   }
+
+  if (isRateio) {
+    const linhas = document.querySelectorAll('#rateio-linhas .rateio-linha');
+    if (!linhas.length) {
+      mostrarMsg('msg-feedback', 'erro', 'Adicione ao menos uma linha de rateio.');
+      return false;
+    }
+    for (let i = 0; i < linhas.length; i++) {
+      const selCat = linhas[i].querySelector('.r-cat');
+      const selCC  = linhas[i].querySelector('.r-cc');
+      const inpVal = linhas[i].querySelector('.r-val');
+      if (!selCat.value) { mostrarMsg('msg-feedback', 'erro', `Linha ${i+1}: selecione a categoria.`); selCat.focus(); return false; }
+      if (!selCC.value)  { mostrarMsg('msg-feedback', 'erro', `Linha ${i+1}: selecione o centro de custo.`); selCC.focus(); return false; }
+      if (!parseMoeda(inpVal.value)) { mostrarMsg('msg-feedback', 'erro', `Linha ${i+1}: informe o valor.`); inpVal.focus(); return false; }
+    }
+    const total   = Math.abs(parseMoeda(document.getElementById('f-valor').value));
+    const alocado = Array.from(document.querySelectorAll('.r-val')).reduce((s, el) => s + (Math.abs(parseMoeda(el.value)) || 0), 0);
+    if (Math.abs(total - alocado) > 0.01) {
+      mostrarMsg('msg-feedback', 'erro', `A soma das linhas (${fmtMfull(alocado)}) deve ser igual ao valor total (${fmtMfull(total)}).`);
+      return false;
+    }
+    return true;
+  }
+
   const cc = document.getElementById('f-cc').value;
   if (cc.startsWith('CC-CLI-') && !document.getElementById('f-contrato').value) {
     mostrarMsg('msg-feedback', 'erro', 'Selecione o contrato vinculado ao centro de custo ' + cc + '.');
@@ -879,6 +1071,9 @@ function _limpar() {
   document.getElementById('placa-row').style.display = 'none';
   document.getElementById('cc-info').classList.remove('visivel');
   document.getElementById('regra-desempate').classList.remove('visivel');
+  const togRateio = document.getElementById('toggle-rateio');
+  if (togRateio.checked) { togRateio.checked = false; _onToggleRateio(); }
+  document.getElementById('toggle-recorrente').disabled = false;
   document.getElementById('toggle-recorrente').checked    = false;
   document.getElementById('recorrente-box').style.display  = 'none';
   const elDataL = document.getElementById('f-data');
@@ -933,8 +1128,9 @@ async function _carregarParaEdicao() {
     document.getElementById('f-placa').value    = l.placa    || '';
 
     if (l.anexoUrl) showExistingAnexo('des', l.anexoUrl, l.anexoNome);
-    // Oculta parcelamento — não editável
+    // Oculta parcelamento e rateio — não editáveis
     document.getElementById('toggle-recorrente').closest('.form-section').style.display = 'none';
+    document.getElementById('toggle-rateio').closest('label').style.display = 'none';
 
     document.getElementById('btn-txt').textContent = '✓ Salvar Alterações';
     document.getElementById('btn-limpar').textContent = '← Cancelar';
