@@ -437,8 +437,11 @@ function _abrirModal(id) {
     ? `<div style="display:flex;flex-direction:column;gap:5px;margin-top:8px">${docs.map(d => `
         <div style="display:flex;align-items:center;gap:8px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--raio);padding:7px 10px;font-size:11px">
           <span>${tipoIconeArquivo(d.nome)}</span>
-          <span style="flex:1;font-weight:600">${d.nome}</span>
-          <span style="color:var(--mu)">${d.size ? (d.size / 1024).toFixed(0) + ' KB' : ''}</span>
+          <span style="flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.nome}</span>
+          <span style="color:var(--mu);flex-shrink:0">${d.size ? (d.size / 1024).toFixed(0) + ' KB' : ''}</span>
+          ${d.url ? `<a href="${d.url}" target="_blank" rel="noopener"
+            style="flex-shrink:0;font-size:10px;font-weight:800;color:var(--amb);border:1px solid var(--amb);border-radius:3px;padding:2px 8px;text-decoration:none;white-space:nowrap">
+            ↓ Baixar</a>` : ''}
         </div>`).join('')}</div>`
     : '<div style="font-size:11px;color:var(--mu);font-style:italic;padding:8px 0">Nenhum documento anexado</div>';
 

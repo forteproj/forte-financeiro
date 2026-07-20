@@ -260,8 +260,11 @@
 
 /* ── Ícone de anexo na tabela (Base de Dados) ── */
 .btn-anexo-td {
-  background: none; border: none; padding: 0 0 0 5px;
-  cursor: pointer; font-size: 13px; vertical-align: middle;
-  opacity: .65; line-height: 1;
+  display: inline-flex; align-items: center; gap: 3px;
+  background: none; border: 1px solid var(--amb); border-radius: 3px;
+  padding: 2px 7px; margin-left: 5px;
+  cursor: pointer; font-size: 10px; font-weight: 800;
+  color: var(--amb); vertical-align: middle; white-space: nowrap;
+  font-family: var(--fonte); line-height: 1.4;
 }
-.btn-anexo-td:hover { opacity: 1; }
+.btn-anexo-td:hover { background: var(--abg); }

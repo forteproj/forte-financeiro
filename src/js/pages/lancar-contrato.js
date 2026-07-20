@@ -1,5 +1,6 @@
 import { criarContrato, atualizarContrato, buscarContrato, buscarContratoPorCC } from '../db.js';
 import { formatarValorInput, parseMoeda, tipoIconeArquivo, fmtBytes, mostrarMsg, esconderMsg, msgHTML } from '../utils.js';
+import { storage, storageRef, uploadBytes, getDownloadURL } from '../firebase-config.js';
 
 let _perfil          = null;
 let _arquivos        = [];
@@ -430,7 +431,7 @@ function _preencherFormulario(c) {
   document.getElementById('f-ret-irrf').value      = c.retencoes?.irrf || 0;
   document.getElementById('f-ret-pcc').value       = c.retencoes?.pcc  || 0;
   document.getElementById('f-ret-icms').value      = c.retencoes?.icms || 0;
-  _arquivos  = (c.documentos || []).map(d => ({ name: d.nome, size: d.size, type: d.tipo, _existente: true }));
+  _arquivos  = (c.documentos || []).map(d => ({ name: d.nome, size: d.size, type: d.tipo, url: d.url || null, _existente: true }));
   _aditivos  = (c.aditivos  || []).map(a => ({ ...a }));
   _renderArquivos();
   _renderAditivos();
@@ -456,6 +457,18 @@ async function _salvar() {
         _setLoading(false);
         return;
       }
+    }
+
+    // Upload de novos arquivos para Firebase Storage
+    const uploadedUrls = {};
+    const novos = _arquivos.filter(f => !f._existente);
+    for (const f of novos) {
+      const ext  = f.name.split('.').pop().toLowerCase();
+      const safe = f.name.replace(/[^a-zA-Z0-9.\-]/g, '_');
+      const path = `contratos/${ccCodigo}/${safe}-${Date.now()}.${ext}`;
+      const ref  = storageRef(storage, path);
+      await uploadBytes(ref, f);
+      uploadedUrls[f.name] = await getDownloadURL(ref);
     }
 
     const dados = {
@@ -486,7 +499,7 @@ async function _salvar() {
         pcc:       parseFloat(document.getElementById('f-ret-pcc').value)   || 0,
         icms:      parseFloat(document.getElementById('f-ret-icms').value)  || 0,
       },
-      documentos:  _arquivos.map(f => ({ nome: f.name, size: f.size, tipo: f.type })),
+      documentos:  _arquivos.map(f => ({ nome: f.name, size: f.size, tipo: f.type, url: f.url || uploadedUrls[f.name] || null })),
       aditivos:    _coletarAditivos().filter(a => a.valor > 0 && a.data),
       cadastradoPor: _perfil?.nome || 'Sistema',
     };

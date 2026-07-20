@@ -378,7 +378,7 @@ function _renderTabela() {
       <td class="bd-info" title="${infoTexto}">${infoTexto}</td>
       <td class="bd-doc">
         ${l.nrDoc || '—'}
-        ${l.anexoUrl ? `<button class="btn-anexo-td" data-url="${l.anexoUrl}" title="Ver anexo">📎</button>` : ''}
+        ${l.anexoUrl ? `<button class="btn-anexo-td" data-url="${l.anexoUrl}" title="Ver anexo">📎 Anexo</button>` : ''}
       </td>
       <td class="bd-contrato">${l.contrato || '—'}</td>
       <td style="text-align:center">
