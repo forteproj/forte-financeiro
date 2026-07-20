@@ -75,7 +75,7 @@ function _render() {
   const clienteNome = cc => contratoMap[cc] || cc;
 
   // Por mês
-  const porMes = m => _lancamentos.filter(l => mesNome(l.dataRenegociacao || l.data) === m);
+  const porMes = m => _lancamentos.filter(l => mesNome(l.dataRecebimento || l.dataRenegociacao || l.data) === m);
   const total  = _lancamentos;
 
   const fR = v => v ? fmtMfull(v)  : '—';
