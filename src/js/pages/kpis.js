@@ -41,7 +41,7 @@ function _ea(def) { return _config[def.key]?.alerta ?? def.alerta; }
 
 // ── Mês efetivo do lançamento (usa data renegociada quando existe) ─────────
 function _efetivaMes(l) {
-  const dataEf = l.dataRenegociacao || l.data;
+  const dataEf = l.dataRecebimento || l.dataRenegociacao || l.data;
   if (!dataEf) return l.mes;
   return MESES[new Date(dataEf + 'T00:00:00').getMonth()];
 }
