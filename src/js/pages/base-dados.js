@@ -637,6 +637,10 @@ async function _confirmarPagamento(id) {
       confirmadoPor:   _perfil?.nome || 'Sistema',
       confirmadoEm:    new Date().toISOString(),
       dataRecebimento,
+      ...(dataRecebimento !== l.data ? {
+        mes: mesNome(dataRecebimento),
+        ano: new Date(dataRecebimento + 'T12:00:00').getFullYear(),
+      } : {}),
     };
     try {
       await atualizarLancamento(id, dados);
