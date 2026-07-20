@@ -606,7 +606,7 @@ async function _confirmarPagamento(id) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
   overlay.innerHTML = `
-    <div style="background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:28px 24px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,.25)">
+    <div style="background:#fff;border:1px solid var(--bd);border-radius:10px;padding:28px 24px;width:340px;box-shadow:0 12px 40px rgba(0,0,0,.35)">
       <div style="font-size:14px;font-weight:700;margin-bottom:6px">${titulo}</div>
       <div style="font-size:12px;color:var(--mu);margin-bottom:18px">${fmtData(l.data)} · ${fmtMfull(Math.abs(l.valor||0))}</div>
       <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);display:block;margin-bottom:6px">${campo}</label>
