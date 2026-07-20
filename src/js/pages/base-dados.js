@@ -311,10 +311,13 @@ function _renderTabela() {
     const catCurta  = (l.categoriaDesc || l.categoria || '—').replace(/^\d+\.\d+\.\d+\s*—\s*/, '');
     const infoTexto = [l.info, l.fornecedor].filter(Boolean).join(' · ') || '—';
 
-    // Data: para receitas regularizadas mostra a renegociada + original abaixo
-    const dataLinha = (status === 'atrasado' && l.dataRenegociacao)
-      ? `${fmtData(l.dataRenegociacao)}<span style="display:block;font-size:9px;color:var(--mu)">orig: ${fmtData(l.data)}</span>`
-      : fmtData(l.data);
+    // Data: realizado com data diferente da prevista → mostra data real + prevista abaixo
+    //       atrasado com renegociação → mostra data renegociada + original abaixo
+    const dataLinha = (status === 'realizado' && l.dataRecebimento && l.dataRecebimento !== l.data)
+      ? `${fmtData(l.dataRecebimento)}<span style="display:block;font-size:9px;color:var(--mu)">prev: ${fmtData(l.data)}</span>`
+      : (status === 'atrasado' && l.dataRenegociacao)
+        ? `${fmtData(l.dataRenegociacao)}<span style="display:block;font-size:9px;color:var(--mu)">orig: ${fmtData(l.data)}</span>`
+        : fmtData(l.data);
 
     const dataCor   = status === 'atrasado' ? 'color:var(--vermelho)' : status === 'pendente' ? 'color:var(--amb)' : '';
 
