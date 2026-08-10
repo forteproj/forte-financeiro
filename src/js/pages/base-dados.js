@@ -56,7 +56,7 @@ function _html() {
   const anos = [anoAtual - 1, anoAtual, anoAtual + 1];
 
   return `
-<div class="page" style="max-width:1300px">
+<div class="page" style="max-width:1680px">
   <div class="bd-sticky-top">
     <div class="page-header">
       <div>
@@ -121,17 +121,17 @@ function _html() {
 
   <!-- TABELA -->
   <div class="tbl-wrap">
-    <div class="tbl-scroll" style="min-width:900px">
+    <div class="tbl-scroll" style="min-width:1100px">
       <table id="bd-table">
         <thead>
           <tr>
             <th data-sort="tipo"      style="width:80px">Tipo</th>
             <th data-sort="data"      style="width:100px">Data</th>
-            <th data-sort="categoria" style="min-width:200px">Categoria</th>
+            <th data-sort="categoria" style="min-width:260px">Categoria</th>
             <th data-sort="cc"        style="width:130px">CC</th>
             <th data-sort="formaPgto" style="width:110px">Forma Pgto</th>
             <th data-sort="valor"     style="width:130px;text-align:right">Valor</th>
-            <th style="min-width:140px">Info / Fornecedor</th>
+            <th style="min-width:240px">Info / Fornecedor</th>
             <th data-sort="nrDoc"     style="width:110px">Nº Doc</th>
             <th data-sort="contrato"  style="width:110px">Contrato</th>
             <th style="width:70px"></th>
