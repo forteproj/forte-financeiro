@@ -23,6 +23,7 @@ let _perfil       = null;
 let _anoAtual     = new Date().getFullYear();
 let _ordenacao    = { campo: 'data', asc: false };
 let _painelAberto = null;
+let _cacheAnos    = new Map(); // ano -> lancamentos[] (evita recarregar anos já buscados)
 
 // 'realizado' | 'pendente' | 'atrasado'
 function _calcStatus(l) {
@@ -36,6 +37,7 @@ export async function mount(container, perfil) {
   _anoAtual     = new Date().getFullYear();
   _ordenacao    = { campo: 'data', asc: false };
   _painelAberto = null;
+  _cacheAnos    = new Map();
   container.innerHTML = _html();
   _bindFiltros();
   await _carregar();
@@ -45,6 +47,7 @@ export function destroy() {
   _lancamentos  = [];
   _filtrados    = [];
   _painelAberto = null;
+  _cacheAnos    = new Map();
 }
 
 // ── HTML ──────────────────────────────────────────
@@ -54,58 +57,67 @@ function _html() {
 
   return `
 <div class="page" style="max-width:1300px">
-  <div class="page-header">
-    <div>
-      <div class="page-title">Base de Dados</div>
-      <div class="page-sub">Todos os lançamentos · Receitas e Despesas · Retenções</div>
+  <div class="bd-sticky-top">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Base de Dados</div>
+        <div class="page-sub">Todos os lançamentos · Receitas e Despesas · Retenções</div>
+      </div>
+      <div class="header-right">
+        <button class="btn-imprimir" id="bd-btn-imprimir" title="Imprimir relatório com os filtros atuais">🖨 Imprimir</button>
+        <span class="badge-total" id="badge-total">— lançamentos</span>
+      </div>
     </div>
-    <div class="header-right">
-      <span class="badge-total" id="badge-total">— lançamentos</span>
+
+    <!-- KPI CARDS -->
+    <div class="kpi-grid" id="kpi-grid" style="margin-bottom:16px"></div>
+
+    <!-- FILTROS -->
+    <div class="bd-filtros">
+      <input class="filtro-input" type="text" id="bd-busca"
+        placeholder="Buscar por doc, categoria, CC, fornecedor..." style="min-width:200px;flex:1">
+
+      <select class="filtro-input" id="bd-status">
+        <option value="">Todos os status</option>
+        <option value="atrasado">Atrasados</option>
+        <option value="pendente">Pendentes</option>
+        <option value="realizado">Realizados</option>
+      </select>
+
+      <select class="filtro-input" id="bd-tipo">
+        <option value="">Todos os tipos</option>
+        <option value="Receita">Receitas</option>
+        <option value="Gasto">Gastos</option>
+      </select>
+
+      <select class="filtro-input" id="bd-mes">
+        <option value="">Todos os meses</option>
+        ${MESES.map(m => `<option value="${m}">${m}</option>`).join('')}
+      </select>
+
+      <select class="filtro-input" id="bd-ano">
+        ${anos.map(a => `<option value="${a}" ${a === anoAtual ? 'selected' : ''}>${a}</option>`).join('')}
+      </select>
+
+      <span style="font-size:10px;color:var(--mu);font-weight:700">Período:</span>
+      <input class="filtro-input" type="date" id="bd-data-de" title="Filtrar a partir desta data" style="max-width:132px">
+      <span style="font-size:10px;color:var(--mu);font-weight:700">até</span>
+      <input class="filtro-input" type="date" id="bd-data-ate" title="Filtrar até esta data" style="max-width:132px">
+      <button id="bd-periodo-limpar" style="display:none;padding:5px 10px;font-size:10px;font-weight:800;border:1px solid var(--bd);background:var(--sf);border-radius:var(--raio);cursor:pointer;color:var(--mu);white-space:nowrap;line-height:1">× Limpar período</button>
+
+      <select class="filtro-input" id="bd-grupo">
+        <option value="">Todos os grupos</option>
+        ${Object.entries(GRUPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+      </select>
+
+      <select class="filtro-input" id="bd-cc">
+        <option value="">Todos os CCs</option>
+      </select>
     </div>
   </div>
 
-  <!-- KPI CARDS -->
-  <div class="kpi-grid" id="kpi-grid" style="margin-bottom:16px"></div>
-
-  <!-- FILTROS -->
-  <div class="bd-filtros">
-    <input class="filtro-input" type="text" id="bd-busca"
-      placeholder="Buscar por doc, categoria, CC, fornecedor..." style="min-width:200px;flex:1">
-
-    <select class="filtro-input" id="bd-status">
-      <option value="">Todos os status</option>
-      <option value="atrasado">Atrasados</option>
-      <option value="pendente">Pendentes</option>
-      <option value="realizado">Realizados</option>
-    </select>
-
-    <select class="filtro-input" id="bd-tipo">
-      <option value="">Todos os tipos</option>
-      <option value="Receita">Receitas</option>
-      <option value="Gasto">Gastos</option>
-    </select>
-
-    <select class="filtro-input" id="bd-mes">
-      <option value="">Todos os meses</option>
-      ${MESES.map(m => `<option value="${m}">${m}</option>`).join('')}
-    </select>
-
-    <select class="filtro-input" id="bd-ano">
-      ${anos.map(a => `<option value="${a}" ${a === anoAtual ? 'selected' : ''}>${a}</option>`).join('')}
-    </select>
-
-    <input class="filtro-input" type="date" id="bd-dia" title="Filtrar por dia específico">
-    <button id="bd-dia-limpar" style="display:none;padding:5px 10px;font-size:10px;font-weight:800;border:1px solid var(--bd);background:var(--sf);border-radius:var(--raio);cursor:pointer;color:var(--mu);white-space:nowrap;line-height:1">× Limpar dia</button>
-
-    <select class="filtro-input" id="bd-grupo">
-      <option value="">Todos os grupos</option>
-      ${Object.entries(GRUPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
-    </select>
-
-    <select class="filtro-input" id="bd-cc">
-      <option value="">Todos os CCs</option>
-    </select>
-  </div>
+  <!-- RESUMO (visível apenas na impressão) -->
+  <div class="bd-print-resumo" id="bd-print-resumo"></div>
 
   <!-- TABELA -->
   <div class="tbl-wrap">
@@ -140,10 +152,33 @@ function _html() {
 }
 
 // ── Carregar ──────────────────────────────────────
+async function _carregarAno(ano) {
+  if (!_cacheAnos.has(ano)) {
+    _cacheAnos.set(ano, await carregarLancamentos(ano));
+  }
+  return _cacheAnos.get(ano);
+}
+
+// Anos necessários: se houver período (De/Até) definido, cobre todos os anos
+// entre as duas datas — permite ex.: última semana de julho + primeira de agosto,
+// ou até um período que cruze a virada do ano. Sem período, usa só o ano selecionado.
+function _anosNecessarios() {
+  const dataDe  = document.getElementById('bd-data-de')?.value  || '';
+  const dataAte = document.getElementById('bd-data-ate')?.value || '';
+  if (!dataDe && !dataAte) return [_anoAtual];
+
+  const anoIni = dataDe  ? +dataDe.slice(0, 4)  : +dataAte.slice(0, 4);
+  const anoFim = dataAte ? +dataAte.slice(0, 4) : +dataDe.slice(0, 4);
+  const anos = [];
+  for (let a = Math.min(anoIni, anoFim); a <= Math.max(anoIni, anoFim); a++) anos.push(a);
+  return anos;
+}
+
 async function _carregar() {
   _setLoading(true);
   try {
-    _lancamentos = await carregarLancamentos(_anoAtual);
+    const listas = await Promise.all(_anosNecessarios().map(_carregarAno));
+    _lancamentos = listas.flat();
     _populaCCFiltro();
     _filtrar();
   } catch (err) {
@@ -170,27 +205,37 @@ function _populaCCFiltro() {
 
 // ── Bind ──────────────────────────────────────────
 function _bindFiltros() {
-  ['bd-busca','bd-tipo','bd-mes','bd-grupo','bd-cc','bd-status'].forEach(id =>
+  ['bd-busca','bd-tipo','bd-grupo','bd-cc','bd-status'].forEach(id =>
     document.getElementById(id)?.addEventListener('input', _filtrar)
   );
-  ['bd-tipo','bd-mes','bd-grupo','bd-cc','bd-status'].forEach(id =>
+  ['bd-tipo','bd-grupo','bd-cc','bd-status'].forEach(id =>
     document.getElementById(id)?.addEventListener('change', _filtrar)
   );
 
-  document.getElementById('bd-dia')?.addEventListener('change', () => {
-    const tem = !!document.getElementById('bd-dia').value;
-    document.getElementById('bd-dia-limpar').style.display = tem ? '' : 'none';
-    _filtrar();
+  // Mês é um atalho para "sem período definido" — escolher um mês limpa o período,
+  // e vice-versa, pra não misturar os dois modos de filtro de data.
+  document.getElementById('bd-mes')?.addEventListener('change', () => _limparPeriodo());
+
+  document.getElementById('bd-data-de')?.addEventListener('change', async () => {
+    _sincronizarLimitesPeriodo();
+    document.getElementById('bd-mes').value = '';
+    _atualizarBotaoLimparPeriodo();
+    await _carregar();
   });
-  document.getElementById('bd-dia-limpar')?.addEventListener('click', () => {
-    document.getElementById('bd-dia').value = '';
-    document.getElementById('bd-dia-limpar').style.display = 'none';
-    _filtrar();
+  document.getElementById('bd-data-ate')?.addEventListener('change', async () => {
+    _sincronizarLimitesPeriodo();
+    document.getElementById('bd-mes').value = '';
+    _atualizarBotaoLimparPeriodo();
+    await _carregar();
   });
+  document.getElementById('bd-periodo-limpar')?.addEventListener('click', () => _limparPeriodo());
+
   document.getElementById('bd-ano')?.addEventListener('change', async () => {
     _anoAtual = +document.getElementById('bd-ano').value;
     await _carregar();
   });
+
+  document.getElementById('bd-btn-imprimir')?.addEventListener('click', () => window.print());
 
   document.getElementById('bd-table')?.querySelector('thead')?.addEventListener('click', e => {
     const th = e.target.closest('[data-sort]');
@@ -231,18 +276,25 @@ function _bindFiltros() {
 
 // ── Filtrar ───────────────────────────────────────
 function _filtrar() {
-  const busca  = (document.getElementById('bd-busca')?.value  || '').toLowerCase();
-  const tipo   = document.getElementById('bd-tipo')?.value   || '';
-  const mes    = document.getElementById('bd-mes')?.value    || '';
-  const dia    = document.getElementById('bd-dia')?.value    || '';
-  const grupo  = document.getElementById('bd-grupo')?.value  || '';
-  const cc     = document.getElementById('bd-cc')?.value     || '';
-  const status = document.getElementById('bd-status')?.value || '';
+  const busca   = (document.getElementById('bd-busca')?.value  || '').toLowerCase();
+  const tipo    = document.getElementById('bd-tipo')?.value   || '';
+  const mes     = document.getElementById('bd-mes')?.value    || '';
+  const dataDe  = document.getElementById('bd-data-de')?.value  || '';
+  const dataAte = document.getElementById('bd-data-ate')?.value || '';
+  const grupo   = document.getElementById('bd-grupo')?.value  || '';
+  const cc      = document.getElementById('bd-cc')?.value     || '';
+  const status  = document.getElementById('bd-status')?.value || '';
+  const temPeriodo = !!(dataDe || dataAte);
 
   _filtrados = _lancamentos.filter(l => {
-    if (tipo  && l.tipo  !== tipo)  return false;
-    if (dia   && l.data  !== dia)   return false;
-    if (!dia  && mes && mesNome(l.dataRenegociacao || l.data) !== mes) return false;
+    const dataRef = l.dataRenegociacao || l.data;
+    if (tipo    && l.tipo !== tipo) return false;
+    if (temPeriodo) {
+      if (dataDe  && dataRef < dataDe)  return false;
+      if (dataAte && dataRef > dataAte) return false;
+    } else if (mes && mesNome(dataRef) !== mes) {
+      return false;
+    }
     if (cc    && l.cc    !== cc)    return false;
     if (grupo && !(l.categoria || '').startsWith(grupo + '.')) return false;
     if (status && _calcStatus(l) !== status) return false;
@@ -257,6 +309,62 @@ function _filtrar() {
   _ordenarLista();
   _renderTabela();
   _renderKPIs();
+}
+
+// ── Período (De / Até) ─────────────────────────────
+function _limparPeriodo() {
+  document.getElementById('bd-data-de').value  = '';
+  document.getElementById('bd-data-ate').value = '';
+  document.getElementById('bd-data-de').removeAttribute('max');
+  document.getElementById('bd-data-ate').removeAttribute('min');
+  _atualizarBotaoLimparPeriodo();
+  _carregar();
+}
+
+function _sincronizarLimitesPeriodo() {
+  const de  = document.getElementById('bd-data-de');
+  const ate = document.getElementById('bd-data-ate');
+  if (de.value)  ate.min = de.value;  else ate.removeAttribute('min');
+  if (ate.value) de.max  = ate.value; else de.removeAttribute('max');
+}
+
+function _atualizarBotaoLimparPeriodo() {
+  const tem = !!(document.getElementById('bd-data-de')?.value || document.getElementById('bd-data-ate')?.value);
+  const btn = document.getElementById('bd-periodo-limpar');
+  if (btn) btn.style.display = tem ? '' : 'none';
+  // Período, mês e ano são modos alternativos do mesmo filtro de data — mês e ano
+  // ficam sem efeito enquanto um período estiver ativo, então desabilita ambos.
+  const mesSel = document.getElementById('bd-mes');
+  const anoSel = document.getElementById('bd-ano');
+  if (mesSel) mesSel.disabled = tem;
+  if (anoSel) anoSel.disabled = tem;
+}
+
+// Resumo textual dos filtros ativos — usado no cabeçalho impresso
+function _resumoFiltros() {
+  const dataDe  = document.getElementById('bd-data-de')?.value  || '';
+  const dataAte = document.getElementById('bd-data-ate')?.value || '';
+  const mesSel    = document.getElementById('bd-mes');
+  const tipoSel   = document.getElementById('bd-tipo');
+  const statusSel = document.getElementById('bd-status');
+  const grupoSel  = document.getElementById('bd-grupo');
+  const cc        = document.getElementById('bd-cc')?.value || '';
+  const busca     = document.getElementById('bd-busca')?.value || '';
+
+  const bits = [];
+  if (dataDe || dataAte) {
+    bits.push(`Período: ${dataDe ? fmtData(dataDe) : '—'} até ${dataAte ? fmtData(dataAte) : '—'}`);
+  } else if (mesSel?.value) {
+    bits.push(`Mês: ${mesSel.value} de ${_anoAtual}`);
+  } else {
+    bits.push(`Ano: ${_anoAtual}`);
+  }
+  if (tipoSel?.value)   bits.push(tipoSel.options[tipoSel.selectedIndex].text);
+  if (statusSel?.value) bits.push(statusSel.options[statusSel.selectedIndex].text);
+  if (grupoSel?.value)  bits.push(grupoSel.options[grupoSel.selectedIndex].text);
+  if (cc)    bits.push('CC: ' + cc);
+  if (busca) bits.push(`Busca: "${busca}"`);
+  return bits.join(' · ');
 }
 
 // ── Ordenação ─────────────────────────────────────
@@ -292,6 +400,13 @@ function _renderTabela() {
   const podeEditar = _perfil?.nivel !== 'operacao';
 
   badge.textContent = _filtrados.length + ' lançamentos';
+
+  const resumoEl = document.getElementById('bd-print-resumo');
+  if (resumoEl) {
+    resumoEl.textContent = `FORTE SINALIZAÇÃO — BASE DE DADOS · ${_resumoFiltros()} · ` +
+      `${_filtrados.length} lançamento${_filtrados.length === 1 ? '' : 's'} · ` +
+      `gerado em ${new Date().toLocaleDateString('pt-BR')}`;
+  }
 
   if (!_filtrados.length) {
     tbody.innerHTML = `<tr><td colspan="10">

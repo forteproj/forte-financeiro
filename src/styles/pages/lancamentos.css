@@ -137,12 +137,39 @@
    BASE DE DADOS
 ════════════════════════════════════════════ */
 
+/* ── Cabeçalho + KPIs + filtros fixos no topo ao rolar ── */
+.bd-sticky-top {
+  position: sticky;
+  top: 50px; /* altura da topbar */
+  z-index: 40;
+  background: var(--bg);
+  padding-top: 20px;
+  margin-top: -20px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--bd);
+}
+
 /* ── Barra de filtros ── */
 .bd-filtros {
   display: flex; flex-wrap: wrap; gap: 8px;
   margin-bottom: 14px;
   align-items: center;
 }
+.bd-filtros input[type=date]:disabled,
+.bd-filtros select:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Botão imprimir ── */
+.btn-imprimir {
+  background: none; border: 1px solid var(--bd); border-radius: var(--raio);
+  padding: 5px 12px; font-family: var(--fonte);
+  font-size: 10px; font-weight: 800; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--txs); cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.btn-imprimir:hover { border-color: var(--ambm); color: var(--amb); }
+
+/* ── Resumo impresso (oculto na tela) ── */
+.bd-print-resumo { display: none; }
 
 /* ── Badge de tipo ── */
 .bd-tipo-tag {
@@ -268,3 +295,26 @@
   font-family: var(--fonte); line-height: 1.4;
 }
 .btn-anexo-td:hover { background: var(--abg); }
+
+/* ── Impressão (Base de Dados) ── */
+@media print {
+  .topbar, #loading-screen, .bd-filtros, .btn-imprimir, .bd-loading,
+  #bd-table th:last-child, #bd-table td:last-child, .btn-anexo-td {
+    display: none !important;
+  }
+  .bd-sticky-top {
+    position: static; margin-top: 0; padding-top: 0; border-bottom: none;
+  }
+  .page { padding: 0; max-width: 100%; }
+  .bd-print-resumo {
+    display: block; font-size: 10px; font-weight: 700;
+    color: #000; letter-spacing: .04em; text-transform: uppercase;
+    margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #999;
+  }
+  body { background: #fff; }
+  .tbl-wrap { border: none; }
+  .tbl-scroll { overflow: visible; min-width: 0 !important; }
+  thead th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tbody tr { break-inside: avoid; }
+  table { font-size: 10px; }
+}
