@@ -741,6 +741,7 @@ async function _confirmarPagamento(id) {
         <option>Bradesco</option>
         <option>Santander</option>
         <option>Nubank</option>
+        <option>Banco do Brasil</option>
       </select>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button id="btn-conf-cancelar"
