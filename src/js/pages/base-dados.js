@@ -723,12 +723,25 @@ async function _confirmarPagamento(id) {
   overlay.innerHTML = `
     <div style="background:#fff;border:1px solid var(--bd);border-radius:10px;padding:28px 24px;width:340px;box-shadow:0 12px 40px rgba(0,0,0,.35)">
       <div style="font-size:14px;font-weight:700;margin-bottom:6px">${titulo}</div>
-      <div style="font-size:12px;color:var(--mu);margin-bottom:18px">${fmtData(l.data)} · ${fmtMfull(Math.abs(l.valor||0))}</div>
+      <div style="font-size:12px;color:var(--mu);margin-bottom:18px">
+        ${fmtData(l.data)} · ${fmtMfull(Math.abs(l.valor||0))}${l.formaPgto ? ' · ' + l.formaPgto : ''}
+      </div>
       <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);display:block;margin-bottom:6px">${campo}</label>
       <input type="date" id="inp-conf-data" value="${hoje}"
         style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:7px 10px;
                font-size:13px;font-family:var(--fonte);background:var(--bg);color:var(--texto);
                outline:none;margin-bottom:20px;box-sizing:border-box">
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);display:block;margin-bottom:6px">Banco</label>
+      <select id="sel-conf-banco"
+        style="width:100%;border:1px solid var(--bd);border-radius:6px;padding:7px 10px;
+               font-size:13px;font-family:var(--fonte);background:var(--bg);color:var(--texto);
+               outline:none;margin-bottom:20px;box-sizing:border-box;appearance:none">
+        <option value="">Selecione...</option>
+        <option>Caixa Econômica</option>
+        <option>Bradesco</option>
+        <option>Santander</option>
+        <option>Nubank</option>
+      </select>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button id="btn-conf-cancelar"
           style="border:1px solid var(--bd);background:none;border-radius:6px;padding:7px 16px;font-size:12px;cursor:pointer;color:var(--texto)">
@@ -745,6 +758,7 @@ async function _confirmarPagamento(id) {
   document.getElementById('btn-conf-cancelar').addEventListener('click', () => overlay.remove());
   document.getElementById('btn-conf-ok').addEventListener('click', async () => {
     const dataRecebimento = document.getElementById('inp-conf-data').value || hoje;
+    const banco = document.getElementById('sel-conf-banco')?.value || '';
     overlay.remove();
 
     const dados = {
@@ -752,6 +766,7 @@ async function _confirmarPagamento(id) {
       confirmadoPor:   _perfil?.nome || 'Sistema',
       confirmadoEm:    new Date().toISOString(),
       dataRecebimento,
+      ...(banco ? { banco } : {}),
       ...(dataRecebimento !== l.data ? {
         mes: mesNome(dataRecebimento),
         ano: new Date(dataRecebimento + 'T12:00:00').getFullYear(),
@@ -802,6 +817,7 @@ async function _reverterPagamento(id) {
     statusPagamento: 'pendente',
     confirmadoPor:   null,
     confirmadoEm:    null,
+    banco:           null,
     ...(isRec ? { dataRecebimento: null } : {}),
   };
 
