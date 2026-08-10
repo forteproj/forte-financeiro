@@ -300,7 +300,7 @@ function _filtrar() {
     if (status && _calcStatus(l) !== status) return false;
     if (busca) {
       const campos = [l.nrDoc, l.categoria, l.categoriaDesc, l.cc,
-                      l.contrato, l.formaPgto, l.info, l.fornecedor].join(' ').toLowerCase();
+                      l.contrato, l.formaPgto, l.info, l.fornecedor, l.banco].join(' ').toLowerCase();
       if (!campos.includes(busca)) return false;
     }
     return true;
@@ -486,7 +486,10 @@ function _renderTabela() {
         <span class="bd-cat-desc">${catCurta}</span>
       </td>
       <td><span class="td-cc">${l.cc || '—'}</span></td>
-      <td class="bd-forma">${l.formaPgto || '—'}</td>
+      <td class="bd-forma">
+        ${l.formaPgto || '—'}
+        ${l.banco ? `<span style="display:block;font-size:9px;color:var(--mu)">${l.banco}</span>` : ''}
+      </td>
       <td class="bd-valor ${isReceita ? 'bd-valor-r' : 'bd-valor-d'}" style="text-align:right">
         ${isReceita ? '+' : '−'} ${fmtMfull(valorAbs)}
       </td>
