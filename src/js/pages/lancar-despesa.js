@@ -395,6 +395,10 @@ function _preencherCCs(contratos) {
     { valor: 'CC-ADM-04-BBC',      label: 'CC-ADM-04-BBC' },
     { valor: 'CC-ADM-05-MSX',      label: 'CC-ADM-05-MSX' },
     { valor: 'CC-ADM-06-ECCOFORTE', label: 'CC-ADM-06-ECCOFORTE' },
+    { valor: 'CC-ADM-07-MARQVIAS',  label: 'CC-ADM-07-MARQVIAS' },
+    { valor: 'CC-SOC-01-AMANDA',    label: 'CC-SOC-01-AMANDA' },
+    { valor: 'CC-SOC-02-ELIZABETH', label: 'CC-SOC-02-ELIZABETH' },
+    { valor: 'CC-SOC-03-CAIO',      label: 'CC-SOC-03-CAIO' },
     { valor: 'CC-MANUTENÇÃO FROTA',        label: 'CC-MANUTENÇÃO FROTA' },
     { valor: 'CC-MANUTENÇÃO EQUIPAMENTOS', label: 'CC-MANUTENÇÃO EQUIPAMENTOS' },
   ].forEach(f => {
@@ -608,7 +612,7 @@ function _onCC() {
     }
   } else {
     info.classList.remove('visivel');
-    if (['CC-ADM-01-MATRIZ', 'CC-ADM-02-FOLHA DE PAGAMENTO', 'CC-ADM-03-INVESTIMENTOS', 'CC-ADM-04-BBC', 'CC-ADM-05-MSX', 'CC-ADM-06-ECCOFORTE', 'CC-MANUTENÇÃO FROTA', 'CC-MANUTENÇÃO EQUIPAMENTOS'].includes(cc)) {
+    if (['CC-ADM-01-MATRIZ', 'CC-ADM-02-FOLHA DE PAGAMENTO', 'CC-ADM-03-INVESTIMENTOS', 'CC-ADM-04-BBC', 'CC-ADM-05-MSX', 'CC-ADM-06-ECCOFORTE', 'CC-ADM-07-MARQVIAS', 'CC-SOC-01-AMANDA', 'CC-SOC-02-ELIZABETH', 'CC-SOC-03-CAIO', 'CC-MANUTENÇÃO FROTA', 'CC-MANUTENÇÃO EQUIPAMENTOS'].includes(cc)) {
       document.getElementById('f-contrato').value = '';
     }
   }
