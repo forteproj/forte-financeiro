@@ -135,8 +135,9 @@ function _html() {
       <div class="section-titulo">Valor e fornecedor</div>
       <div class="row row-3">
         <div class="campo">
-          <label>Valor total (R$) <span style="color:var(--vermelho)">*</span></label>
+          <label><span id="lbl-valor">Valor total (R$)</span> <span style="color:var(--vermelho)">*</span></label>
           <input type="text" id="f-valor" placeholder="0,00">
+          <div class="campo-hint" id="hint-valor" style="display:none">Valor de cada parcela — replicado nas parcelas abaixo (edite individualmente se alguma for diferente).</div>
         </div>
         <div class="campo">
           <label>Fornecedor / Beneficiário</label>
@@ -671,6 +672,10 @@ function _onJuros() {
 function _onRecorrente() {
   const on = document.getElementById('toggle-recorrente').checked;
   document.getElementById('recorrente-box').style.display = on ? '' : 'none';
+  const lblValor = document.getElementById('lbl-valor');
+  if (lblValor) lblValor.textContent = on ? 'Valor da parcela (R$)' : 'Valor total (R$)';
+  const hintValor = document.getElementById('hint-valor');
+  if (hintValor) hintValor.style.display = on ? '' : 'none';
   const elData = document.getElementById('f-data');
   if (elData) { elData.disabled = on; elData.style.opacity = on ? '0.4' : ''; }
   // juros não se aplica a lançamentos parcelados
@@ -696,8 +701,9 @@ function _renderParcelas({ resetValores = false } = {}) {
   const existingV = Array.from(container.querySelectorAll('[data-valor-parcela]')).map(el => el.value);
   container.innerHTML = '';
 
-  const total = parseMoeda(document.getElementById('f-valor').value);
-  const vp    = total > 0 ? total / n : 0;
+  // Valor digitado é o valor de CADA parcela (ex.: aluguel fixo) — replica pra
+  // todas, em vez de ratear/dividir. Cada linha continua editável individualmente.
+  const vp    = parseMoeda(document.getElementById('f-valor').value);
   const fmtVP = vp > 0 ? vp.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
 
   const valorCell = i => (!resetValores && existingV[i]) ? existingV[i] : fmtVP;
@@ -894,6 +900,7 @@ async function _salvar() {
       }
     }
 
+    let somaParcelas = 0;
     for (let i = 0; i < n; i++) {
       const data  = datas[i];
       const d     = new Date(data + 'T12:00:00');
@@ -903,8 +910,10 @@ async function _salvar() {
       const nrDoc = isParcelado ? `${nrDocBase}-P${i + 1}` : nrDocBase;
       let valor;
       if (isParcelado) {
+        // valorTotal aqui é o valor da parcela (replicado) — cada linha pode ter sido editada
         const vEl = document.querySelectorAll('#datas-parcelas [data-valor-parcela]')[i];
-        valor = -(vEl ? Math.abs(parseMoeda(vEl.value)) || valorTotal / n : valorTotal / n);
+        valor = -(vEl ? Math.abs(parseMoeda(vEl.value)) || valorTotal : valorTotal);
+        somaParcelas += Math.abs(valor);
       } else {
         valor = -valorTotal;
       }
@@ -957,7 +966,7 @@ async function _salvar() {
     }
 
     mostrarMsg('msg-feedback', 'sucesso', isParcelado
-      ? `${n} parcelas lançadas · total ${fmtMfull(valorTotal)} · ${ccVal}`
+      ? `${n} parcelas lançadas · total ${fmtMfull(somaParcelas)} · ${ccVal}`
       : isJuros && jurosValorCapturado > 0
         ? `Despesa lançada · ${fmtMfull(valorTotal)} em ${ccVal} + juros ${fmtMfull(jurosValorCapturado)} → 5.1.002 em CC-ADM-01-MATRIZ`
         : `Despesa lançada: ${catDesc.split('—').slice(1).join('—').trim() || catDesc} · ${fmtMfull(valorTotal)} · ${ccVal}`
@@ -1076,6 +1085,10 @@ function _limpar() {
   document.getElementById('toggle-recorrente').disabled = false;
   document.getElementById('toggle-recorrente').checked    = false;
   document.getElementById('recorrente-box').style.display  = 'none';
+  const lblValor = document.getElementById('lbl-valor');
+  if (lblValor) lblValor.textContent = 'Valor total (R$)';
+  const hintValor = document.getElementById('hint-valor');
+  if (hintValor) hintValor.style.display = 'none';
   const elDataL = document.getElementById('f-data');
   if (elDataL) { elDataL.disabled = false; elDataL.style.opacity = ''; }
   const togJ = document.getElementById('toggle-juros');
